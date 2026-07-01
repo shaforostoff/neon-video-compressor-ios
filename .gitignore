@@ -1,0 +1,10 @@
+# Native build artifacts (regenerate with scripts/build-all.sh)
+/build/
+/Frameworks/
+*.log
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.DS_Store

@@ -1,0 +1,443 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		CEA0E60F2FF468E700B2343B /* Neon_Video_CompressorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA0E60E2FF468E700B2343B /* Neon_Video_CompressorApp.swift */; };
+		CEA0E6112FF468E700B2343B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA0E6102FF468E700B2343B /* ContentView.swift */; };
+		CEA0E6132FF468EE00B2343B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CEA0E6122FF468EE00B2343B /* Assets.xcassets */; };
+		CEA0E6162FF468EE00B2343B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CEA0E6152FF468EE00B2343B /* Preview Assets.xcassets */; };
+		AFADB2DEA8B741F37894D090 /* Transcoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 66DB086A10F8BFE623AA1C97 /* Transcoder.cpp */; };
+		E1AA3F907DF22601D783F57B /* TranscodeEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = 83B9E51241133870B0B8E593 /* TranscodeEngine.mm */; };
+		711162040B9652B17964F26A /* EncodeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0884B433578E879314C5BF /* EncodeSettings.swift */; };
+		F2307EAD7BA9225B92DBE95F /* EncodeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514087D553BE1DF26570D40F /* EncodeSession.swift */; };
+		E5FC94927B1EC6E5829A2E61 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7484224BCB1CCC0E56DEA95A /* SetupView.swift */; };
+		C6D4BD4866BDA3A98E983493 /* ProgressView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09D6493CD6865710CC73BF72 /* ProgressView2.swift */; };
+		9FADD0A809F7A0875EBBD8B8 /* x265.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC0F677E5031BE31FD9B144D /* x265.xcframework */; };
+		CCE015EC28A13FF4C7D1A1A4 /* FFmpeg.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD864316027151B57F8EC618 /* FFmpeg.xcframework */; };
+		675B09D6D675BC550B1E377E /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FCE514D518425FD6219806F5 /* AudioToolbox.framework */; };
+		C56F24837631516F160BFB83 /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD23816C634F86B12EAD8DE5 /* VideoToolbox.framework */; };
+		0199CF00429251AC55A390C0 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8523DA134110E92B3F9601FF /* CoreMedia.framework */; };
+		F309AC137362199540379DF3 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 593A976724D5229606ACF4C4 /* CoreVideo.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		CEA0E60B2FF468E700B2343B /* Neon Video Compressor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Neon Video Compressor.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEA0E60E2FF468E700B2343B /* Neon_Video_CompressorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Neon_Video_CompressorApp.swift; sourceTree = "<group>"; };
+		CEA0E6102FF468E700B2343B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		CEA0E6122FF468EE00B2343B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CEA0E6152FF468EE00B2343B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		90F5B435E9A63F059021883D /* Transcoder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Transcoder.hpp; sourceTree = "<group>"; };
+		66DB086A10F8BFE623AA1C97 /* Transcoder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Transcoder.cpp; sourceTree = "<group>"; };
+		CBEB51F5010A0C2599D99E01 /* TranscodeEngine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TranscodeEngine.h; sourceTree = "<group>"; };
+		83B9E51241133870B0B8E593 /* TranscodeEngine.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = TranscodeEngine.mm; sourceTree = "<group>"; };
+		49B9368536F0B87C3C57D666 /* Neon Video Compressor-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Neon Video Compressor-Bridging-Header.h"; sourceTree = "<group>"; };
+		3B0884B433578E879314C5BF /* EncodeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncodeSettings.swift; sourceTree = "<group>"; };
+		514087D553BE1DF26570D40F /* EncodeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncodeSession.swift; sourceTree = "<group>"; };
+		7484224BCB1CCC0E56DEA95A /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		09D6493CD6865710CC73BF72 /* ProgressView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView2.swift; sourceTree = "<group>"; };
+		AC0F677E5031BE31FD9B144D /* x265.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = x265.xcframework; path = Frameworks/x265.xcframework; sourceTree = "<group>"; };
+		AD864316027151B57F8EC618 /* FFmpeg.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = FFmpeg.xcframework; path = Frameworks/FFmpeg.xcframework; sourceTree = "<group>"; };
+		FCE514D518425FD6219806F5 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		BD23816C634F86B12EAD8DE5 /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = System/Library/Frameworks/VideoToolbox.framework; sourceTree = SDKROOT; };
+		8523DA134110E92B3F9601FF /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		593A976724D5229606ACF4C4 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CEA0E6082FF468E700B2343B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CCE015EC28A13FF4C7D1A1A4 /* FFmpeg.xcframework in Frameworks */,
+				9FADD0A809F7A0875EBBD8B8 /* x265.xcframework in Frameworks */,
+				675B09D6D675BC550B1E377E /* AudioToolbox.framework in Frameworks */,
+				C56F24837631516F160BFB83 /* VideoToolbox.framework in Frameworks */,
+				0199CF00429251AC55A390C0 /* CoreMedia.framework in Frameworks */,
+				F309AC137362199540379DF3 /* CoreVideo.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CEA0E6022FF468E700B2343B = {
+			isa = PBXGroup;
+			children = (
+				CEA0E60D2FF468E700B2343B /* Neon Video Compressor */,
+				E21564448049924D3D97B856 /* Frameworks */,
+				CEA0E60C2FF468E700B2343B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CEA0E60C2FF468E700B2343B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CEA0E60B2FF468E700B2343B /* Neon Video Compressor.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CEA0E60D2FF468E700B2343B /* Neon Video Compressor */ = {
+			isa = PBXGroup;
+			children = (
+				CEA0E60E2FF468E700B2343B /* Neon_Video_CompressorApp.swift */,
+				CEA0E6102FF468E700B2343B /* ContentView.swift */,
+				49B9368536F0B87C3C57D666 /* Neon Video Compressor-Bridging-Header.h */,
+				A35F04898239DE8499D46D79 /* Models */,
+				9D611A761182AB38C40C5B63 /* Views */,
+				B023982F6A145F5B80BB4EE8 /* Engine */,
+				CEA0E6122FF468EE00B2343B /* Assets.xcassets */,
+				CEA0E6142FF468EE00B2343B /* Preview Content */,
+			);
+			path = "Neon Video Compressor";
+			sourceTree = "<group>";
+		};
+		B023982F6A145F5B80BB4EE8 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				90F5B435E9A63F059021883D /* Transcoder.hpp */,
+				66DB086A10F8BFE623AA1C97 /* Transcoder.cpp */,
+				CBEB51F5010A0C2599D99E01 /* TranscodeEngine.h */,
+				83B9E51241133870B0B8E593 /* TranscodeEngine.mm */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		A35F04898239DE8499D46D79 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				3B0884B433578E879314C5BF /* EncodeSettings.swift */,
+				514087D553BE1DF26570D40F /* EncodeSession.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		9D611A761182AB38C40C5B63 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7484224BCB1CCC0E56DEA95A /* SetupView.swift */,
+				09D6493CD6865710CC73BF72 /* ProgressView2.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E21564448049924D3D97B856 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AC0F677E5031BE31FD9B144D /* x265.xcframework */,
+				AD864316027151B57F8EC618 /* FFmpeg.xcframework */,
+				FCE514D518425FD6219806F5 /* AudioToolbox.framework */,
+				BD23816C634F86B12EAD8DE5 /* VideoToolbox.framework */,
+				8523DA134110E92B3F9601FF /* CoreMedia.framework */,
+				593A976724D5229606ACF4C4 /* CoreVideo.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CEA0E6142FF468EE00B2343B /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				CEA0E6152FF468EE00B2343B /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CEA0E60A2FF468E700B2343B /* Neon Video Compressor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CEA0E6192FF468EE00B2343B /* Build configuration list for PBXNativeTarget "Neon Video Compressor" */;
+			buildPhases = (
+				CEA0E6072FF468E700B2343B /* Sources */,
+				CEA0E6082FF468E700B2343B /* Frameworks */,
+				CEA0E6092FF468E700B2343B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Neon Video Compressor";
+			productName = "Neon Video Compressor";
+			productReference = CEA0E60B2FF468E700B2343B /* Neon Video Compressor.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CEA0E6032FF468E700B2343B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1520;
+				LastUpgradeCheck = 1520;
+				TargetAttributes = {
+					CEA0E60A2FF468E700B2343B = {
+						CreatedOnToolsVersion = 15.2;
+					};
+				};
+			};
+			buildConfigurationList = CEA0E6062FF468E700B2343B /* Build configuration list for PBXProject "Neon Video Compressor" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CEA0E6022FF468E700B2343B;
+			productRefGroup = CEA0E60C2FF468E700B2343B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CEA0E60A2FF468E700B2343B /* Neon Video Compressor */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CEA0E6092FF468E700B2343B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CEA0E6162FF468EE00B2343B /* Preview Assets.xcassets in Resources */,
+				CEA0E6132FF468EE00B2343B /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CEA0E6072FF468E700B2343B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CEA0E6112FF468E700B2343B /* ContentView.swift in Sources */,
+				CEA0E60F2FF468E700B2343B /* Neon_Video_CompressorApp.swift in Sources */,
+				711162040B9652B17964F26A /* EncodeSettings.swift in Sources */,
+				F2307EAD7BA9225B92DBE95F /* EncodeSession.swift in Sources */,
+				E5FC94927B1EC6E5829A2E61 /* SetupView.swift in Sources */,
+				C6D4BD4866BDA3A98E983493 /* ProgressView2.swift in Sources */,
+				E1AA3F907DF22601D783F57B /* TranscodeEngine.mm in Sources */,
+				AFADB2DEA8B741F37894D090 /* Transcoder.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		CEA0E6172FF468EE00B2343B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		CEA0E6182FF468EE00B2343B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CEA0E61A2FF468EE00B2343B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save converted videos to your photo library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick recorded videos to convert.";
+				SWIFT_OBJC_BRIDGING_HEADER = "Neon Video Compressor/Neon Video Compressor-Bridging-Header.h";
+				DEVELOPMENT_ASSET_PATHS = "\"Neon Video Compressor/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.shaforostoff.Neon-Video-Compressor";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CEA0E61B2FF468EE00B2343B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save converted videos to your photo library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick recorded videos to convert.";
+				SWIFT_OBJC_BRIDGING_HEADER = "Neon Video Compressor/Neon Video Compressor-Bridging-Header.h";
+				DEVELOPMENT_ASSET_PATHS = "\"Neon Video Compressor/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "org.shaforostoff.Neon-Video-Compressor";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CEA0E6062FF468E700B2343B /* Build configuration list for PBXProject "Neon Video Compressor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEA0E6172FF468EE00B2343B /* Debug */,
+				CEA0E6182FF468EE00B2343B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CEA0E6192FF468EE00B2343B /* Build configuration list for PBXNativeTarget "Neon Video Compressor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEA0E61A2FF468EE00B2343B /* Debug */,
+				CEA0E61B2FF468EE00B2343B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CEA0E6032FF468E700B2343B /* Project object */;
+}
