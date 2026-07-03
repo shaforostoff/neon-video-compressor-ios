@@ -49,7 +49,10 @@ typedef NS_ENUM(NSInteger, TVCAudioProfile) {
 /// Fired on the main queue, ~5x/sec.
 @property (nonatomic, copy, nullable) void (^onProgress)(double processedSeconds,
                                                          double totalSeconds,
-                                                         double speed);
+                                                         double speed,
+                                                         long long inputBytes,
+                                                         long long totalInputBytes,
+                                                         long long outputBytes);
 /// Fired on the main queue exactly once.
 @property (nonatomic, copy, nullable) void (^onFinished)(BOOL success,
                                                          NSString *_Nullable error);

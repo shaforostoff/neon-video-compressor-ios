@@ -195,6 +195,7 @@ void Transcoder::run(TranscodeOptions opts) {
     int err = 0;
     std::string error;
     double totalDuration = 0;
+    long long totalInputBytes = 0;      // source file size, cached once
     double startWall = nowSeconds();
     double lastEmit = 0;
     double processedSeconds = 0;
@@ -279,6 +280,10 @@ void Transcoder::run(TranscodeOptions opts) {
     }
     if (ifmt->duration != AV_NOPTS_VALUE)
         totalDuration = (double)ifmt->duration / AV_TIME_BASE;
+    if (ifmt->pb) {
+        int64_t sz = avio_size(ifmt->pb);   // seeks to end + restores position
+        if (sz > 0) totalInputBytes = sz;
+    }
 
     for (unsigned i = 0; i < ifmt->nb_streams; ++i) {
         AVMediaType t = ifmt->streams[i]->codecpar->codec_type;
@@ -430,6 +435,11 @@ void Transcoder::run(TranscodeOptions opts) {
             p.processedSeconds = processedSeconds;
             p.totalSeconds = totalDuration;
             p.speed = wall > 0.01 ? processedSeconds / wall : 0;
+            // avio_tell is a no-op position query (used routinely by muxers), so
+            // it's safe to read on both the read and write contexts each tick.
+            if (ifmt && ifmt->pb) p.inputBytes = avio_tell(ifmt->pb);
+            p.totalInputBytes = totalInputBytes;
+            if (ofmt && ofmt->pb) p.outputBytes = avio_tell(ofmt->pb);
             onProgress(p);
         }
     };

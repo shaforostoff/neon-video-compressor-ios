@@ -46,6 +46,9 @@ struct Progress {
     double processedSeconds = 0;
     double totalSeconds = 0;
     double speed = 0;                   // ratio to realtime playback
+    long long inputBytes = 0;          // bytes read from the source so far
+    long long totalInputBytes = 0;     // total source size (0 if unknown)
+    long long outputBytes = 0;         // bytes written to the output so far
 };
 
 class Transcoder {

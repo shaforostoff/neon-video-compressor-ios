@@ -74,8 +74,9 @@ static std::string cppstr(NSString *s) { return s ? std::string(s.UTF8String) : 
         TVCTranscoder *s = weakSelf;
         if (!s || !s.onProgress) return;
         double proc = p.processedSeconds, tot = p.totalSeconds, spd = p.speed;
+        long long inB = p.inputBytes, totIn = p.totalInputBytes, outB = p.outputBytes;
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (s.onProgress) s.onProgress(proc, tot, spd);
+            if (s.onProgress) s.onProgress(proc, tot, spd, inB, totIn, outB);
         });
     };
     _core->onFinished = [weakSelf](bool success, const std::string &err) {

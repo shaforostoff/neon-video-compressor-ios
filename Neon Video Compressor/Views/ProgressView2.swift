@@ -64,6 +64,20 @@ struct ProgressView2: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
 
+            VStack(spacing: 6) {
+                HStack {
+                    Label("Memory", systemImage: "memorychip")
+                    Spacer()
+                    Text(byteString(session.ramBytes)).monospacedDigit()
+                }
+                HStack {
+                    Label("Processed", systemImage: "arrow.right.doc.on.clipboard")
+                    Spacer()
+                    Text(dataProgressText).monospacedDigit()
+                }
+            }
+            .font(.footnote).foregroundStyle(.secondary)
+
             HStack(spacing: 16) {
                 if session.phase == .paused {
                     Button { session.resume() } label: {
@@ -160,5 +174,17 @@ struct ProgressView2: View {
     private func fileSize(_ url: URL) -> String {
         let bytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         return ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+    private func byteString(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: max(0, bytes), countStyle: .file)
+    }
+    // "12.3 MB of 45 MB → 4.1 MB" (or without the total when it's unknown).
+    private var dataProgressText: String {
+        let read = byteString(session.inputBytes)
+        let written = byteString(session.outputBytes)
+        if session.totalInputBytes > 0 {
+            return "\(read) of \(byteString(session.totalInputBytes)) → \(written)"
+        }
+        return "\(read) → \(written)"
     }
 }
