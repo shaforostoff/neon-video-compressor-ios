@@ -6,6 +6,7 @@
 #include <chrono>
 #include <vector>
 #include <cstdio>
+#include <cstring>
 #include <algorithm>
 
 extern "C" {
@@ -94,6 +95,21 @@ int profileFor(AudioProfile p) {
         case AudioProfile::HE_AACv2: return AV_PROFILE_AAC_HE_V2;
     }
     return AV_PROFILE_AAC_LOW;
+}
+
+// Copy the display-matrix side data (rotation/flip) from an input stream to an
+// output stream. iPhone stores "portrait" clips as landscape pixels plus a 90°
+// matrix; re-encoding builds a fresh stream that would otherwise lose it and
+// play sideways. Safe to call on a stream that has none (no-op).
+void copyDisplayMatrix(const AVStream *in, AVStream *out) {
+    const AVPacketSideData *sd = av_packet_side_data_get(
+        in->codecpar->coded_side_data, in->codecpar->nb_coded_side_data,
+        AV_PKT_DATA_DISPLAYMATRIX);
+    if (!sd) return;
+    AVPacketSideData *dst = av_packet_side_data_new(
+        &out->codecpar->coded_side_data, &out->codecpar->nb_coded_side_data,
+        AV_PKT_DATA_DISPLAYMATRIX, sd->size, 0);
+    if (dst) memcpy(dst->data, sd->data, sd->size);
 }
 
 } // namespace
@@ -250,6 +266,7 @@ void Transcoder::run(TranscodeOptions opts) {
         video.outStream->time_base = video.enc->time_base;
         video.outStream->avg_frame_rate = video.enc->framerate;
         video.outIndex = video.outStream->index;
+        copyDisplayMatrix(ifmt->streams[video.inIndex], video.outStream); // keep rotation
         video.scaled = av_frame_alloc();
         return 0;
     };
@@ -311,6 +328,7 @@ void Transcoder::run(TranscodeOptions opts) {
                 video.outStream->codecpar->codec_tag = MKTAG('h','v','c','1');
             video.outStream->time_base = in->time_base;
             video.outIndex = video.outStream->index;
+            copyDisplayMatrix(in, video.outStream); // keep rotation
         } else {
             const AVCodec *decoder = avcodec_find_decoder(in->codecpar->codec_id);
             videoEncoder = avcodec_find_encoder_by_name("libx265");
