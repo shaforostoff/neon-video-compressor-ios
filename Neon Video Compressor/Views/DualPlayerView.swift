@@ -54,13 +54,13 @@ final class DualPlayerUIView: UIView {
         CATransaction.commit()
     }
 
-    /// Cross-fade to the original (comparing) or back to the encoded clip.
+    /// Instantly cut between the encoded clip and the original (both players stay
+    /// running and time-synced, so the picture doesn't jump in time on the switch).
     func setComparing(_ comparing: Bool) {
-        let target: Float = comparing ? 0 : 1   // encoded opacity
+        let target: Float = comparing ? 0 : 1   // encoded (top) opacity
         guard encodedLayer.opacity != target else { return }
         CATransaction.begin()
-        CATransaction.setAnimationDuration(0.25)
-        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
+        CATransaction.setDisableActions(true)   // no fade — hard cut
         encodedLayer.opacity = target
         CATransaction.commit()
     }

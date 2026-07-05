@@ -190,19 +190,23 @@ final class PreviewController {
         originalPlayer.setRate(1, time: .zero, atHostTime: at)
     }
 
-    /// While the original is hidden, gently re-lock it to the encoded player if the
-    /// two loops have drifted apart, so the moment the user starts comparing they're
-    /// aligned. Skipped while comparing (don't disturb the visible original).
+    /// While the original is hidden, continuously re-lock it to the encoded player
+    /// so the two loops stay at the same timestamp — the instant the user holds to
+    /// compare, both are on the same frame. Skipped while comparing so we never
+    /// nudge the original the user is actually looking at.
     private func installResync() {
-        let interval = CMTime(seconds: 0.3, preferredTimescale: 600)
+        let interval = CMTime(seconds: 0.2, preferredTimescale: 600)
+        // Re-anchoring takes effect `lead` seconds from now; aim the original at
+        // where the encoded WILL be by then, or it lands `lead` seconds behind.
+        let lead = CMTime(seconds: 0.08, preferredTimescale: 600)
         resyncObserver = encodedPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
             guard let self, !self.isComparing,
                   self.encodedPlayer.timeControlStatus == .playing else { return }
             let drift = self.encodedPlayer.currentTime().seconds - self.originalPlayer.currentTime().seconds
-            if abs(drift) > 0.05 {
-                let host = CMClockGetTime(self.clock)
-                let at = CMTimeAdd(host, CMTime(seconds: 0.05, preferredTimescale: 600))
-                self.originalPlayer.setRate(1, time: self.encodedPlayer.currentTime(), atHostTime: at)
+            if abs(drift) > 0.03 {
+                let at = CMTimeAdd(CMClockGetTime(self.clock), lead)
+                let target = CMTimeAdd(self.encodedPlayer.currentTime(), lead)
+                self.originalPlayer.setRate(1, time: target, atHostTime: at)
             }
         }
     }
