@@ -16,6 +16,7 @@ struct SetupView: View {
     @State private var showFileImporter = false
     @State private var loading = false
     @State private var loadError: String?
+    @State private var previewJob: EncodeJob?
 
     var body: some View {
         Form {
@@ -32,6 +33,9 @@ struct SetupView: View {
         .fileImporter(isPresented: $showFileImporter,
                       allowedContentTypes: [.movie, .mpeg4Movie, .quickTimeMovie, .video],
                       allowsMultipleSelection: false) { handleFileImport($0) }
+        .fullScreenCover(item: $previewJob) { job in
+            PreviewCompareView(job: job)
+        }
     }
 
     // MARK: sections
@@ -115,6 +119,11 @@ struct SetupView: View {
             TextField("Output name", text: $baseName)
                 .textInputAutocapitalization(.never)
             if let job = buildJob() {
+                Button { previewJob = job } label: {
+                    Label("Preview first 5s", systemImage: "eye")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
                 NavigationLink(value: job) {
                     Label("Convert", systemImage: "wand.and.stars")
                         .frame(maxWidth: .infinity)

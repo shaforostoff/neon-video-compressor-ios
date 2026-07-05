@@ -17,6 +17,9 @@
 		F2307EAD7BA9225B92DBE95F /* EncodeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514087D553BE1DF26570D40F /* EncodeSession.swift */; };
 		E5FC94927B1EC6E5829A2E61 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7484224BCB1CCC0E56DEA95A /* SetupView.swift */; };
 		C6D4BD4866BDA3A98E983493 /* ProgressView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09D6493CD6865710CC73BF72 /* ProgressView2.swift */; };
+		CEA0E6A0000000000000A002 /* PreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA0E6A0000000000000A001 /* PreviewController.swift */; };
+		CEA0E6A0000000000000A004 /* DualPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA0E6A0000000000000A003 /* DualPlayerView.swift */; };
+		CEA0E6A0000000000000A006 /* PreviewCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA0E6A0000000000000A005 /* PreviewCompareView.swift */; };
 		9FADD0A809F7A0875EBBD8B8 /* x265.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC0F677E5031BE31FD9B144D /* x265.xcframework */; };
 		CCE015EC28A13FF4C7D1A1A4 /* FFmpeg.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD864316027151B57F8EC618 /* FFmpeg.xcframework */; };
 		675B09D6D675BC550B1E377E /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FCE514D518425FD6219806F5 /* AudioToolbox.framework */; };
@@ -40,6 +43,9 @@
 		514087D553BE1DF26570D40F /* EncodeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncodeSession.swift; sourceTree = "<group>"; };
 		7484224BCB1CCC0E56DEA95A /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		09D6493CD6865710CC73BF72 /* ProgressView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView2.swift; sourceTree = "<group>"; };
+		CEA0E6A0000000000000A001 /* PreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewController.swift; sourceTree = "<group>"; };
+		CEA0E6A0000000000000A003 /* DualPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualPlayerView.swift; sourceTree = "<group>"; };
+		CEA0E6A0000000000000A005 /* PreviewCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewCompareView.swift; sourceTree = "<group>"; };
 		AC0F677E5031BE31FD9B144D /* x265.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = x265.xcframework; path = Frameworks/x265.xcframework; sourceTree = "<group>"; };
 		AD864316027151B57F8EC618 /* FFmpeg.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = FFmpeg.xcframework; path = Frameworks/FFmpeg.xcframework; sourceTree = "<group>"; };
 		FCE514D518425FD6219806F5 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -113,6 +119,7 @@
 			children = (
 				3B0884B433578E879314C5BF /* EncodeSettings.swift */,
 				514087D553BE1DF26570D40F /* EncodeSession.swift */,
+				CEA0E6A0000000000000A001 /* PreviewController.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -122,6 +129,8 @@
 			children = (
 				7484224BCB1CCC0E56DEA95A /* SetupView.swift */,
 				09D6493CD6865710CC73BF72 /* ProgressView2.swift */,
+				CEA0E6A0000000000000A003 /* DualPlayerView.swift */,
+				CEA0E6A0000000000000A005 /* PreviewCompareView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -223,6 +232,9 @@
 				F2307EAD7BA9225B92DBE95F /* EncodeSession.swift in Sources */,
 				E5FC94927B1EC6E5829A2E61 /* SetupView.swift in Sources */,
 				C6D4BD4866BDA3A98E983493 /* ProgressView2.swift in Sources */,
+				CEA0E6A0000000000000A002 /* PreviewController.swift in Sources */,
+				CEA0E6A0000000000000A004 /* DualPlayerView.swift in Sources */,
+				CEA0E6A0000000000000A006 /* PreviewCompareView.swift in Sources */,
 				E1AA3F907DF22601D783F57B /* TranscodeEngine.mm in Sources */,
 				AFADB2DEA8B741F37894D090 /* Transcoder.cpp in Sources */,
 			);

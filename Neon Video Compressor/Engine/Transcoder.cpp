@@ -299,6 +299,10 @@ void Transcoder::run(TranscodeOptions opts) {
     }
     if (ifmt->duration != AV_NOPTS_VALUE)
         totalDuration = (double)ifmt->duration / AV_TIME_BASE;
+    // Preview mode: cap the reported total so progress reads 0→100% over the clip.
+    if (opts.durationLimitSeconds > 0 &&
+        (totalDuration <= 0 || totalDuration > opts.durationLimitSeconds))
+        totalDuration = opts.durationLimitSeconds;
     if (ifmt->pb) {
         int64_t sz = avio_size(ifmt->pb);   // seeks to end + restores position
         if (sz > 0) totalInputBytes = sz;
@@ -542,6 +546,15 @@ void Transcoder::run(TranscodeOptions opts) {
         double iterStart = nowSeconds();
         err = av_read_frame(ifmt, pkt);
         if (err < 0) break; // EOF
+
+        // Preview mode: stop once the video stream passes the limit. Gauge on the
+        // video stream so we always capture a full N seconds of frames; the flush
+        // path after the loop finalizes the (short) file normally.
+        if (opts.durationLimitSeconds > 0 && pkt->stream_index == video.inIndex &&
+            pkt->pts != AV_NOPTS_VALUE) {
+            double t = pkt->pts * av_q2d(ifmt->streams[video.inIndex]->time_base);
+            if (t >= opts.durationLimitSeconds) { av_packet_unref(pkt); break; }
+        }
 
         if (pkt->stream_index == video.inIndex && video.outStream) {
             if (!video.encode) {

@@ -48,7 +48,8 @@ struct EncodeSettings: Hashable {
 }
 
 /// A fully-specified job handed to the progress screen.
-struct EncodeJob: Hashable {
+struct EncodeJob: Hashable, Identifiable {
+    let id = UUID()
     let inputURL: URL
     let outputURL: URL
     let settings: EncodeSettings

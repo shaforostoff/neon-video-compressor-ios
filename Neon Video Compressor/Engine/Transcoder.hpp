@@ -28,6 +28,7 @@ struct TranscodeOptions {
     AudioProfile audioProfile = AudioProfile::HE_AAC;
     int audioBitrate = 40000;           // bits/sec (e.g. -b:a 40k)
     bool faststart = true;              // +faststart
+    double durationLimitSeconds = 0;    // stop after this many seconds (0 = whole file)
 };
 
 struct MediaInfo {

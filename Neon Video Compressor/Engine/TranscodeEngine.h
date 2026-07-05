@@ -39,6 +39,7 @@ typedef NS_ENUM(NSInteger, TVCAudioProfile) {
 @property (nonatomic, copy, nullable) NSString *x265Params;
 @property (nonatomic) TVCAudioProfile audioProfile;
 @property (nonatomic) NSInteger audioBitrate;   // bits/sec
+@property (nonatomic) double durationLimitSeconds;  // stop after N seconds (0 = whole file)
 @end
 
 @interface TVCTranscoder : NSObject

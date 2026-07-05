@@ -68,6 +68,7 @@ static std::string cppstr(NSString *s) { return s ? std::string(s.UTF8String) : 
         case TVCAudioProfileHighEfficiencyV2: o.audioProfile = tvc::AudioProfile::HE_AACv2; break;
     }
     o.audioBitrate = (int)options.audioBitrate;
+    o.durationLimitSeconds = options.durationLimitSeconds;
 
     __weak TVCTranscoder *weakSelf = self;
     _core->onProgress = [weakSelf](const tvc::Progress &p) {
