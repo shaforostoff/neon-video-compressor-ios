@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <thread>
+#include <mach/mach.h>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -30,6 +32,20 @@ namespace {
 double nowSeconds() {
     using namespace std::chrono;
     return duration<double>(steady_clock::now().time_since_epoch()).count();
+}
+
+// Total CPU time consumed by this process across ALL live threads (user+system),
+// in seconds. Used to pace the encode against iOS's background CPU limit — it
+// must include x265's worker threads, not just the calling thread.
+double processCpuSeconds() {
+    task_thread_times_info_data_t tti;
+    mach_msg_type_number_t count = TASK_THREAD_TIMES_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
+                  (task_info_t)&tti, &count) != KERN_SUCCESS)
+        return 0;
+    double user = tti.user_time.seconds + tti.user_time.microseconds / 1e6;
+    double sys  = tti.system_time.seconds + tti.system_time.microseconds / 1e6;
+    return user + sys;
 }
 
 // Feature toggle for the crash-surviving debug log (tvc_debug.log). Disabled by
@@ -448,17 +464,31 @@ void Transcoder::run(TranscodeOptions opts) {
     bool fatal = false;
     std::vector<AVPacket *> pending; // packets seen before a deferred header
 
-    // Background CPU pacing: after each unit of work, sleep a matching amount so
-    // the process stays near a ~50% duty cycle, keeping it under iOS's background
-    // CPU limit (~80%/60s) that would otherwise kill us mid-encode while locked.
-    // No-op unless setThrottled(true) (only set while backgrounded).
-    auto throttle = [&](double workSeconds) {
-        if (!throttled_ || workSeconds <= 0) return;
-        double remaining = workSeconds;   // duty 0.5 => sleep == work
-        while (remaining > 0 && !cancelled_ && throttled_) {
-            double chunk = std::min(remaining, 0.1);   // small chunks stay cancel-responsive
+    // Background CPU pacing. iOS kills a backgrounded app that averages >80% CPU
+    // over 60s. x265 encodes on its own worker threads (async), so we can't pace
+    // by the feeder thread's own timing — we measure the WHOLE process's CPU time
+    // (all threads) and sleep whenever the CPU/wall ratio since throttling began
+    // exceeds a safe target. While we sleep, x265 drains its backlog and then goes
+    // idle, which pulls the ratio back down. No-op unless setThrottled(true).
+    bool thrActive = false;
+    double thrWall0 = 0, thrCpu0 = 0;
+    const double kThrottleTarget = 0.5;   // target CPU/wall ratio, safely < 0.80
+    auto throttle = [&]() {
+        if (!throttled_) { thrActive = false; return; }
+        if (!thrActive) {                 // just entered background — set baseline
+            thrActive = true;
+            thrWall0 = nowSeconds();
+            thrCpu0 = processCpuSeconds();
+            return;
+        }
+        while (!cancelled_ && throttled_) {
+            double wall = nowSeconds() - thrWall0;
+            double cpu = processCpuSeconds() - thrCpu0;
+            if (wall <= 0 || cpu / wall <= kThrottleTarget) break;
+            double needWall = cpu / kThrottleTarget;          // wall to hit target
+            double chunk = std::min(needWall - wall, 0.1);    // cancel-responsive
+            if (chunk <= 0) break;
             std::this_thread::sleep_for(std::chrono::duration<double>(chunk));
-            remaining -= chunk;
         }
     };
 
@@ -543,7 +573,6 @@ void Transcoder::run(TranscodeOptions opts) {
 
     // -- main demux loop ----------------------------------------------------
     while (gate()) {
-        double iterStart = nowSeconds();
         err = av_read_frame(ifmt, pkt);
         if (err < 0) break; // EOF
 
@@ -651,7 +680,7 @@ void Transcoder::run(TranscodeOptions opts) {
         }
         av_packet_unref(pkt);
         if (fatal) break;
-        throttle(nowSeconds() - iterStart);   // pace CPU when backgrounded
+        throttle();   // pace whole-process CPU when backgrounded
     }
 
     // deferred setup never triggered => no video frame was ever decoded
