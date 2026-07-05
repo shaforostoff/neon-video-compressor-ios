@@ -57,6 +57,8 @@ final class PreviewController {
     private var previewTime: CMTime {
         CMTime(seconds: Self.previewSeconds, preferredTimescale: 600)
     }
+    /// Actual shared loop length (≤ previewSeconds), set once assets are loaded.
+    private var loopSeconds: Double = PreviewController.previewSeconds
 
     // MARK: - lifecycle
 
@@ -121,9 +123,17 @@ final class PreviewController {
             // Load keys up front so the first loop cycle doesn't stall.
             let encodedAsset = AVURLAsset(url: encodedURL)
             let originalAsset = AVURLAsset(url: originalURL)
-            _ = try? await encodedAsset.load(.isPlayable, .duration)
-            _ = try? await originalAsset.load(.isPlayable, .duration)
+            let encDur = (try? await encodedAsset.load(.duration))?.seconds ?? Self.previewSeconds
+            let origDur = (try? await originalAsset.load(.duration))?.seconds ?? Self.previewSeconds
             await self.computeAspect(from: originalAsset)
+
+            // Loop BOTH players over the exact same window so they wrap in lockstep
+            // (an encoded clip that came out slightly ≠ 5 s would otherwise wrap at a
+            // different instant than the original and desync every cycle — the jump
+            // near the loop point). Clamp to whatever is actually available.
+            let loop = max(0.1, min(min(encDur, origDur), Self.previewSeconds))
+            self.loopSeconds = loop
+            let range = CMTimeRange(start: .zero, duration: CMTime(seconds: loop, preferredTimescale: 600))
 
             let encodedItem = AVPlayerItem(asset: encodedAsset)
             let originalItem = AVPlayerItem(asset: originalAsset)
@@ -137,10 +147,10 @@ final class PreviewController {
             self.encodedPlayer.isMuted = false      // preview audio audible
             self.originalPlayer.isMuted = true       // avoid double audio on compare
 
-            self.encodedLooper = AVPlayerLooper(player: self.encodedPlayer, templateItem: encodedItem)
+            self.encodedLooper = AVPlayerLooper(player: self.encodedPlayer,
+                                                templateItem: encodedItem, timeRange: range)
             self.originalLooper = AVPlayerLooper(player: self.originalPlayer,
-                                                 templateItem: originalItem,
-                                                 timeRange: CMTimeRange(start: .zero, duration: self.previewTime))
+                                                 templateItem: originalItem, timeRange: range)
 
             self.observeReadyThenStart()
             self.phase = .ready
@@ -202,10 +212,19 @@ final class PreviewController {
         resyncObserver = encodedPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
             guard let self, !self.isComparing,
                   self.encodedPlayer.timeControlStatus == .playing else { return }
-            let drift = self.encodedPlayer.currentTime().seconds - self.originalPlayer.currentTime().seconds
+            let loop = self.loopSeconds
+            let enc = self.encodedPlayer.currentTime().seconds
+            let orig = self.originalPlayer.currentTime().seconds
+            // Fold the difference into ±loop/2 so being on opposite sides of the wrap
+            // (e.g. enc 0.02 vs orig 4.98) reads as a tiny drift, not a full loop.
+            var drift = (enc - orig).truncatingRemainder(dividingBy: loop)
+            if drift > loop / 2 { drift -= loop }
+            else if drift < -loop / 2 { drift += loop }
             if abs(drift) > 0.03 {
                 let at = CMTimeAdd(CMClockGetTime(self.clock), lead)
-                let target = CMTimeAdd(self.encodedPlayer.currentTime(), lead)
+                // Where the encoded will be at host time `at`, wrapped into the loop.
+                let targetSec = (enc + lead.seconds).truncatingRemainder(dividingBy: loop)
+                let target = CMTime(seconds: targetSec, preferredTimescale: 600)
                 self.originalPlayer.setRate(1, time: target, atHostTime: at)
             }
         }

@@ -81,12 +81,14 @@ struct PreviewCompareView: View {
     // MARK: gestures
 
     // Hold to compare — a short long-press qualifier so quick taps (and the
-    // double-tap) don't flicker the crossfade; the drag tracks until release.
+    // double-tap) don't flicker the switch; the drag tracks until release. Works at
+    // any zoom: a stationary hold satisfies the long press (compare), while moving
+    // the finger promptly cancels it so the pan gesture takes over instead.
     private var compareGesture: some Gesture {
         LongPressGesture(minimumDuration: 0.15)
             .sequenced(before: DragGesture(minimumDistance: 0))
             .onChanged { value in
-                if case .second(true, _) = value, controller.scale == 1 {
+                if case .second(true, _) = value {
                     controller.isComparing = true
                 }
             }
