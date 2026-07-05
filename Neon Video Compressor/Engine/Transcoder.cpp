@@ -472,7 +472,7 @@ void Transcoder::run(TranscodeOptions opts) {
     // idle, which pulls the ratio back down. No-op unless setThrottled(true).
     bool thrActive = false;
     double thrWall0 = 0, thrCpu0 = 0;
-    const double kThrottleTarget = 0.5;   // target CPU/wall ratio, safely < 0.80
+    const double kThrottleTarget = 0.6;   // target CPU/wall ratio, safely < 0.80
     auto throttle = [&]() {
         if (!throttled_) { thrActive = false; return; }
         if (!thrActive) {                 // just entered background — set baseline

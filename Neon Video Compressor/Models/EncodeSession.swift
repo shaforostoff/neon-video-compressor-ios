@@ -24,7 +24,7 @@ final class EncodeSession {
 
     /// When on, keep encoding while the screen is locked via a silent audio
     /// session (costs battery). User-controlled from the progress screen.
-    var keepAwake: Bool = false {
+    var keepAwake: Bool = true {
         didSet { if keepAwake != oldValue { updateKeepAlive() } }
     }
 
@@ -78,6 +78,7 @@ final class EncodeSession {
 
         phase = .running
         transcoder.start(with: o)
+        updateKeepAlive()
     }
 
     // MARK: user controls
