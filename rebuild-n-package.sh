@@ -41,6 +41,13 @@ PLIST="$PRODUCTS/$APP.app/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :UIFileSharingEnabled bool true" "$PLIST" 2>/dev/null \
   || /usr/libexec/PlistBuddy -c "Set :UIFileSharingEnabled true" "$PLIST"
 
+# UIBackgroundModes=[audio] powers the "keep converting when locked" toggle
+# (silent-audio keep-alive). Synthesized Info.plist can't express it, so add it
+# here (regenerated each build, so a plain Add is safe).
+/usr/libexec/PlistBuddy -c "Delete :UIBackgroundModes" "$PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST"
+
 cd "$PRODUCTS"
 
 rm -rf Payload && mkdir Payload

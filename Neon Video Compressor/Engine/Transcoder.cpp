@@ -190,6 +190,8 @@ void Transcoder::cancel() {
     }
 }
 
+void Transcoder::setThrottled(bool on) { throttled_ = on; }
+
 void Transcoder::wait() {
     if (worker_.joinable()) worker_.join();
 }
@@ -442,6 +444,20 @@ void Transcoder::run(TranscodeOptions opts) {
     bool fatal = false;
     std::vector<AVPacket *> pending; // packets seen before a deferred header
 
+    // Background CPU pacing: after each unit of work, sleep a matching amount so
+    // the process stays near a ~50% duty cycle, keeping it under iOS's background
+    // CPU limit (~80%/60s) that would otherwise kill us mid-encode while locked.
+    // No-op unless setThrottled(true) (only set while backgrounded).
+    auto throttle = [&](double workSeconds) {
+        if (!throttled_ || workSeconds <= 0) return;
+        double remaining = workSeconds;   // duty 0.5 => sleep == work
+        while (remaining > 0 && !cancelled_ && throttled_) {
+            double chunk = std::min(remaining, 0.1);   // small chunks stay cancel-responsive
+            std::this_thread::sleep_for(std::chrono::duration<double>(chunk));
+            remaining -= chunk;
+        }
+    };
+
     auto emitProgress = [&](double pts) {
         if (pts > processedSeconds) processedSeconds = pts;
         double wall = nowSeconds() - startWall - pausedAccum_;
@@ -523,6 +539,7 @@ void Transcoder::run(TranscodeOptions opts) {
 
     // -- main demux loop ----------------------------------------------------
     while (gate()) {
+        double iterStart = nowSeconds();
         err = av_read_frame(ifmt, pkt);
         if (err < 0) break; // EOF
 
@@ -621,6 +638,7 @@ void Transcoder::run(TranscodeOptions opts) {
         }
         av_packet_unref(pkt);
         if (fatal) break;
+        throttle(nowSeconds() - iterStart);   // pace CPU when backgrounded
     }
 
     // deferred setup never triggered => no video frame was ever decoded

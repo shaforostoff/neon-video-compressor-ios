@@ -52,6 +52,13 @@ PLIST="build/Build/Products/Release-iphoneos/Neon Video Compressor.app/Info.plis
 /usr/libexec/PlistBuddy -c "Add :UIFileSharingEnabled bool true" "$PLIST" 2>/dev/null \
   || /usr/libexec/PlistBuddy -c "Set :UIFileSharingEnabled true" "$PLIST"
 
+# UIBackgroundModes=[audio] powers the "keep converting when locked" toggle
+# (silent-audio keep-alive). The synthesized Info.plist can't express it, so add
+# it here (freshly regenerated each build, so a plain Add is safe).
+/usr/libexec/PlistBuddy -c "Delete :UIBackgroundModes" "$PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" "$PLIST"
+
 cd build/Build/Products/Release-iphoneos
 
 rm -rf Payload && mkdir Payload

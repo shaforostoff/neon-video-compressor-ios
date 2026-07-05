@@ -93,5 +93,6 @@ static std::string cppstr(NSString *s) { return s ? std::string(s.UTF8String) : 
 - (void)pause  { _core->pause(); }
 - (void)resume { _core->resume(); }
 - (void)cancel { _core->cancel(); }
+- (void)setThrottled:(BOOL)on { _core->setThrottled(on); }
 
 @end

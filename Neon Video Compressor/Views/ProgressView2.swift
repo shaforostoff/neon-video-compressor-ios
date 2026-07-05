@@ -93,10 +93,22 @@ struct ProgressView2: View {
                 }.buttonStyle(.bordered)
             }
 
-            Label("Long conversions may not finish while the app is in the background — return to the app to keep going.",
-                  systemImage: "exclamationmark.triangle")
-                .font(.caption).foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+            Toggle(isOn: $session.keepAwake) {
+                Label("Keep converting when locked", systemImage: "bolt.fill")
+            }
+            .font(.subheadline)
+
+            if session.keepAwake {
+                Label("Keeps converting while locked (slower, and uses more battery). Return to the app for full speed.",
+                      systemImage: "battery.25")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            } else {
+                Label("Long conversions may not finish while the app is in the background — return to the app to keep going.",
+                      systemImage: "exclamationmark.triangle")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
     }
 

@@ -62,6 +62,10 @@ typedef NS_ENUM(NSInteger, TVCAudioProfile) {
 - (void)resume;
 - (void)cancel;
 
+/// Pace the encoder to stay under iOS's background CPU limit. Enable while
+/// backgrounded (keep-awake), disable in the foreground for full speed.
+- (void)setThrottled:(BOOL)on;
+
 @end
 
 NS_ASSUME_NONNULL_END

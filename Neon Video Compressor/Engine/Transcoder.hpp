@@ -72,6 +72,11 @@ public:
     void cancel();
     void wait();                                 // join worker
 
+    // When on, the worker paces itself (sleeps between work) to keep CPU under
+    // iOS's background limit (~80%/60s). Enable while backgrounded; disable in
+    // the foreground for full speed. Safe to toggle from any thread.
+    void setThrottled(bool on);
+
 private:
     void run(TranscodeOptions opts);
     // Blocks while paused; returns false if cancelled (loop should stop).
@@ -82,6 +87,7 @@ private:
     std::condition_variable cv_;
     std::atomic<bool> paused_{false};
     std::atomic<bool> cancelled_{false};
+    std::atomic<bool> throttled_{false};
 
     // wall-clock accounting that excludes paused time
     double pausedAccum_ = 0;
