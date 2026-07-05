@@ -7,7 +7,7 @@ import PhotosUI
 import UniformTypeIdentifiers
 
 struct SetupView: View {
-    @State private var settings = EncodeSettings()
+    @State private var settings = EncodeSettings.loadSaved()
     @State private var inputURL: URL?
     @State private var info: TVCMediaInfo?
     @State private var baseName: String = "video"
@@ -36,6 +36,7 @@ struct SetupView: View {
         .fullScreenCover(item: $previewJob) { job in
             PreviewCompareView(job: job)
         }
+        .onChange(of: settings) { _, newValue in newValue.save() }
     }
 
     // MARK: sections
