@@ -25,7 +25,6 @@ struct SetupView: View {
         Form {
             sourceSection
             if inputURL != nil {
-                optionsSection
                 videoSection
                 audioSection
                 convertSection
@@ -71,19 +70,13 @@ struct SetupView: View {
         }
     }
 
-    private var optionsSection: some View {
-        Section("What to convert") {
-            Picker("Streams", selection: $settings.mode) {
-                ForEach(ConversionMode.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.inline)
-            .labelsHidden()
-        }
-    }
-
     @ViewBuilder private var videoSection: some View {
-        if settings.mode.encodesVideo {
-            Section("Video — HEVC (libx265, tag hvc1)") {
+        Section("Video") {
+            Picker("Mode", selection: $settings.videoAction) {
+                ForEach(StreamAction.allCases) { Text($0.rawValue).tag($0) }
+            }
+            switch settings.videoAction {
+            case .encode:
                 VStack(alignment: .leading) {
                     HStack {
                         Text("CRF (quality)")
@@ -91,7 +84,7 @@ struct SetupView: View {
                         Text("\(Int(settings.crf))").monospacedDigit().foregroundStyle(.secondary)
                     }
                     Slider(value: $settings.crf, in: 0...51, step: 1)
-                    Text("Lower = better quality, larger file. 28–32 is typical.")
+                    Text("HEVC (libx265, tag hvc1). Lower CRF = better quality, larger file. 28–32 is typical.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Picker("Preset", selection: $settings.preset) {
@@ -103,24 +96,33 @@ struct SetupView: View {
                 }
                 Text("10-bit preserves HDR and smooth gradients; 8-bit is smaller and more widely compatible.")
                     .font(.caption).foregroundStyle(.secondary)
+            case .copy:
+                Text("Kept as-is, not re-encoded.").font(.caption).foregroundStyle(.secondary)
+            case .remove:
+                Text("Dropped — output is audio-only (.m4a).").font(.caption).foregroundStyle(.secondary)
             }
-        } else {
-            Section("Video") { Text("Copied without re-encoding").foregroundStyle(.secondary) }
         }
     }
 
     @ViewBuilder private var audioSection: some View {
-        if settings.mode.encodesAudio {
-            Section("Audio — AAC (AudioToolbox)") {
+        Section("Audio") {
+            Picker("Mode", selection: $settings.audioAction) {
+                ForEach(StreamAction.allCases) { Text($0.rawValue).tag($0) }
+            }
+            switch settings.audioAction {
+            case .encode:
                 Picker("Profile", selection: $settings.audioProfile) {
                     ForEach(AudioProfileOption.allCases) { Text($0.rawValue).tag($0) }
                 }
                 Picker("Bitrate", selection: $settings.audioBitrateKbps) {
                     ForEach(EncodeSettings.bitrateChoices, id: \.self) { Text("\($0) kbps").tag($0) }
                 }
+                Text("AAC (AudioToolbox).").font(.caption).foregroundStyle(.secondary)
+            case .copy:
+                Text("Kept as-is, not re-encoded.").font(.caption).foregroundStyle(.secondary)
+            case .remove:
+                Text("Dropped — output has no audio.").font(.caption).foregroundStyle(.secondary)
             }
-        } else {
-            Section("Audio") { Text("Copied without re-encoding").foregroundStyle(.secondary) }
         }
     }
 
@@ -129,19 +131,26 @@ struct SetupView: View {
             TextField("Output name", text: $baseName)
                 .textInputAutocapitalization(.never)
             if let job = buildJob() {
-                Button { previewJob = job } label: {
-                    Label("Preview first 5s", systemImage: "eye")
-                        .frame(maxWidth: .infinity)
+                // The A/B preview is a visual compare, so it's meaningless for an
+                // audio-only (video removed) output.
+                if settings.videoAction != .remove {
+                    Button { previewJob = job } label: {
+                        Label("Preview first 5s", systemImage: "eye")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
                 NavigationLink(value: job) {
                     Label("Convert", systemImage: "wand.and.stars")
                         .frame(maxWidth: .infinity)
                         .fontWeight(.semibold)
                 }
+            } else if settings.videoAction == .remove && settings.audioAction == .remove {
+                Text("Select at least one stream to keep.")
+                    .font(.footnote).foregroundStyle(.red)
             }
         } footer: {
-            Text("Output: \(baseName)_hevc.mp4 with +faststart, saved to the app's Documents.")
+            Text("Output: \(outputFileName) with +faststart, saved to the app's Documents.")
         }
     }
 
@@ -256,10 +265,17 @@ struct SetupView: View {
         if !probed.ok { loadError = probed.error ?? "Unsupported file." }
     }
 
+    /// Output filename — audio-only (video removed) is an .m4a, otherwise an .mp4.
+    private var outputFileName: String {
+        let safe = baseName.isEmpty ? "video" : baseName
+        return settings.videoAction == .remove ? "\(safe)_audio.m4a" : "\(safe)_hevc.mp4"
+    }
+
     private func buildJob() -> EncodeJob? {
         guard let inputURL, let info, info.ok else { return nil }
-        let safe = baseName.isEmpty ? "video" : baseName
-        let out = Self.docsDir().appendingPathComponent("\(safe)_hevc.mp4")
+        // At least one stream must be kept.
+        guard !(settings.videoAction == .remove && settings.audioAction == .remove) else { return nil }
+        let out = Self.docsDir().appendingPathComponent(outputFileName)
         return EncodeJob(inputURL: inputURL, outputURL: out,
                          settings: settings, totalSeconds: info.durationSeconds,
                          sourceAssetID: sourceAssetID)

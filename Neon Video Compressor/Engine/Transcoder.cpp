@@ -393,6 +393,12 @@ void Transcoder::run(TranscodeOptions opts) {
         else if (t == AVMEDIA_TYPE_AUDIO && audio.inIndex < 0) audio.inIndex = (int)i;
     }
 
+    // "Remove" a stream by forgetting its input: no output stream is created and
+    // its packets are ignored below (every stage guards on inIndex >= 0). With
+    // video removed the output is audio-only; the caller names it .m4a.
+    if (opts.videoMode == StreamMode::Remove) video.inIndex = -1;
+    if (opts.audioMode == StreamMode::Remove) audio.inIndex = -1;
+
     // -- alloc output -------------------------------------------------------
     if ((err = avformat_alloc_output_context2(&ofmt, nullptr, nullptr,
                                               opts.outputPath.c_str())) < 0) {

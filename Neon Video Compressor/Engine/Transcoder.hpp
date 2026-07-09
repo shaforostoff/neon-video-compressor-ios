@@ -14,7 +14,7 @@
 
 namespace tvc {
 
-enum class StreamMode { Encode, Copy };
+enum class StreamMode { Encode, Copy, Remove };
 enum class AudioProfile { AAC_LC, HE_AAC, HE_AACv2 };
 
 struct TranscodeOptions {

@@ -74,8 +74,8 @@ final class PreviewController {
         let o = TVCEncodeOptions()
         o.inputPath = job.inputURL.path
         o.outputPath = out.path
-        o.videoMode = job.settings.mode.videoMode
-        o.audioMode = job.settings.mode.audioMode
+        o.videoMode = job.settings.videoAction.tvc
+        o.audioMode = job.settings.audioAction.tvc
         o.crf = Int(job.settings.crf)
         // Fastest x265 preset — the preview trades a little quality/size fidelity
         // (preset affects both) for speed. CRF/mode/audio still match the real job.

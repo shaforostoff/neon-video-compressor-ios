@@ -55,10 +55,15 @@ static std::string cppstr(NSString *s) { return s ? std::string(s.UTF8String) : 
     tvc::TranscodeOptions o;
     o.inputPath = cppstr(options.inputPath);
     o.outputPath = cppstr(options.outputPath);
-    o.videoMode = options.videoMode == TVCStreamModeCopy ? tvc::StreamMode::Copy
-                                                         : tvc::StreamMode::Encode;
-    o.audioMode = options.audioMode == TVCStreamModeCopy ? tvc::StreamMode::Copy
-                                                         : tvc::StreamMode::Encode;
+    auto mapMode = [](TVCStreamMode m) {
+        switch (m) {
+            case TVCStreamModeCopy:   return tvc::StreamMode::Copy;
+            case TVCStreamModeRemove: return tvc::StreamMode::Remove;
+            default:                  return tvc::StreamMode::Encode;
+        }
+    };
+    o.videoMode = mapMode(options.videoMode);
+    o.audioMode = mapMode(options.audioMode);
     o.crf = (int)options.crf;
     o.preset = cppstr(options.preset);
     o.x265Params = cppstr(options.x265Params);

@@ -138,20 +138,24 @@ struct ProgressView2: View {
                         .frame(maxWidth: .infinity)
                 }.buttonStyle(.borderedProminent)
 
-                Button {
-                    saveToPhotos(url)
-                } label: {
-                    Label("Save to Photos", systemImage: "photo.badge.plus")
-                        .frame(maxWidth: .infinity)
-                }.buttonStyle(.bordered)
-
-                if let assetID = job.sourceAssetID {
-                    Button(role: .destructive) {
-                        replaceOriginal(url, assetID: assetID)
+                // Photos can't store a bare audio file, so the Photos actions only
+                // apply when the output has a video track.
+                if job.settings.videoAction != .remove {
+                    Button {
+                        saveToPhotos(url)
                     } label: {
-                        Label("Replace original in Photos", systemImage: "arrow.triangle.2.circlepath")
+                        Label("Save to Photos", systemImage: "photo.badge.plus")
                             .frame(maxWidth: .infinity)
                     }.buttonStyle(.bordered)
+
+                    if let assetID = job.sourceAssetID {
+                        Button(role: .destructive) {
+                            replaceOriginal(url, assetID: assetID)
+                        } label: {
+                            Label("Replace original in Photos", systemImage: "arrow.triangle.2.circlepath")
+                                .frame(maxWidth: .infinity)
+                        }.buttonStyle(.bordered)
+                    }
                 }
             }
             if let saveError { Text(saveError).font(.caption).foregroundStyle(.red) }

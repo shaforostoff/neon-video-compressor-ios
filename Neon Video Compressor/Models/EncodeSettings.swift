@@ -4,16 +4,20 @@
 //
 import Foundation
 
-enum ConversionMode: String, CaseIterable, Identifiable, Hashable, Codable {
-    case both       = "Video + Audio"
-    case videoOnly  = "Video only (copy audio)"
-    case audioOnly  = "Audio only (copy video)"
+/// What to do with a single stream (video or audio).
+enum StreamAction: String, CaseIterable, Identifiable, Hashable, Codable {
+    case encode = "Encode"
+    case copy   = "Copy"
+    case remove = "Remove"
     var id: String { rawValue }
 
-    var videoMode: TVCStreamMode { self == .audioOnly ? .copy : .encode }
-    var audioMode: TVCStreamMode { self == .videoOnly ? .copy : .encode }
-    var encodesVideo: Bool { videoMode == .encode }
-    var encodesAudio: Bool { audioMode == .encode }
+    var tvc: TVCStreamMode {
+        switch self {
+        case .encode: return .encode
+        case .copy:   return .copy
+        case .remove: return .remove
+        }
+    }
 }
 
 enum X265Preset: String, CaseIterable, Identifiable, Hashable, Codable {
@@ -38,7 +42,8 @@ enum AudioProfileOption: String, CaseIterable, Identifiable, Hashable, Codable {
 }
 
 struct EncodeSettings: Hashable, Codable {
-    var mode: ConversionMode = .both
+    var videoAction: StreamAction = .encode
+    var audioAction: StreamAction = .encode
     var crf: Double = 30
     var preset: X265Preset = .slow
     var audioProfile: AudioProfileOption = .heAAC
@@ -54,11 +59,12 @@ struct EncodeSettings: Hashable, Codable {
     // Decode leniently so adding a new option doesn't discard a user's saved
     // settings — any missing key falls back to its default.
     enum CodingKeys: String, CodingKey {
-        case mode, crf, preset, audioProfile, audioBitrateKbps, forceEightBit
+        case videoAction, audioAction, crf, preset, audioProfile, audioBitrateKbps, forceEightBit
     }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        mode = try c.decodeIfPresent(ConversionMode.self, forKey: .mode) ?? .both
+        videoAction = try c.decodeIfPresent(StreamAction.self, forKey: .videoAction) ?? .encode
+        audioAction = try c.decodeIfPresent(StreamAction.self, forKey: .audioAction) ?? .encode
         crf = try c.decodeIfPresent(Double.self, forKey: .crf) ?? 30
         preset = try c.decodeIfPresent(X265Preset.self, forKey: .preset) ?? .slow
         audioProfile = try c.decodeIfPresent(AudioProfileOption.self, forKey: .audioProfile) ?? .heAAC

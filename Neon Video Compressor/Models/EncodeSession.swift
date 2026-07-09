@@ -58,8 +58,8 @@ final class EncodeSession {
         let o = TVCEncodeOptions()
         o.inputPath = job.inputURL.path
         o.outputPath = job.outputURL.path
-        o.videoMode = job.settings.mode.videoMode
-        o.audioMode = job.settings.mode.audioMode
+        o.videoMode = job.settings.videoAction.tvc
+        o.audioMode = job.settings.audioAction.tvc
         o.crf = Int(job.settings.crf)
         o.preset = job.settings.preset.rawValue
         o.audioProfile = job.settings.audioProfile.tvc

@@ -9,6 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NS_ENUM(NSInteger, TVCStreamMode) {
     TVCStreamModeEncode = 0,
     TVCStreamModeCopy   = 1,
+    TVCStreamModeRemove = 2,   // drop the stream entirely
 };
 
 typedef NS_ENUM(NSInteger, TVCAudioProfile) {
