@@ -60,12 +60,11 @@ struct SetupView: View {
             if let info {
                 LabeledContent("Duration", value: timeString(info.durationSeconds))
                 if info.videoWidth > 0 {
-                    LabeledContent("Video",
-                        value: "\(info.videoCodec.uppercased()) · \(info.videoWidth)×\(info.videoHeight)")
+                    LabeledContent("Video", value: "\(info.videoWidth)×\(info.videoHeight)")
                 }
                 if !info.audioCodec.isEmpty {
                     LabeledContent("Audio",
-                        value: "\(info.audioCodec.uppercased()) · \(info.audioChannels)ch · \(info.audioSampleRate/1000)kHz")
+                        value: "\(info.audioChannels)ch · \(info.audioSampleRate/1000)kHz")
                 }
             }
         }
@@ -146,14 +145,14 @@ struct SetupView: View {
         loading = true; loadError = nil
         defer { loading = false }
         do {
-            if let movie = try await item.loadTransferable(type: PickedMovie.self) {
-                await MainActor.run {
-                    sourceAssetID = item.itemIdentifier   // localIdentifier, for "Replace original"
-                    adopt(url: movie.url)
-                }
-            } else {
+            guard let movie = try await item.loadTransferable(type: PickedMovie.self) else {
                 loadError = "Could not load that video."
+                return
             }
+            // Probe off the main thread so reading the file header doesn't hitch the UI.
+            let probed = await Task.detached { TVCTranscoder.probe(movie.url.path) }.value
+            sourceAssetID = item.itemIdentifier   // localIdentifier, for "Replace original"
+            adopt(url: movie.url, info: probed)
         } catch {
             loadError = error.localizedDescription
         }
@@ -163,24 +162,37 @@ struct SetupView: View {
         switch result {
         case .success(let urls):
             guard let src = urls.first else { return }
-            let needsStop = src.startAccessingSecurityScopedResource()
-            defer { if needsStop { src.stopAccessingSecurityScopedResource() } }
-            do {
-                let dst = Self.tempDir().appendingPathComponent(src.lastPathComponent)
-                try? FileManager.default.removeItem(at: dst)
-                try FileManager.default.copyItem(at: src, to: dst)
-                sourceAssetID = nil   // Files import has no Photos asset to replace
-                adopt(url: dst)
-            } catch { loadError = error.localizedDescription }
+            Task { await importFile(src) }
         case .failure(let err):
             loadError = err.localizedDescription
         }
     }
 
-    private func adopt(url: URL) {
+    /// Copy the picked file into our temp dir and probe it, both off the main
+    /// thread so the UI stays responsive during the (potentially large) copy.
+    private func importFile(_ src: URL) async {
+        loading = true; loadError = nil
+        defer { loading = false }
+        do {
+            let dst: URL = try await Task.detached {
+                let needsStop = src.startAccessingSecurityScopedResource()
+                defer { if needsStop { src.stopAccessingSecurityScopedResource() } }
+                let dst = SetupView.tempDir().appendingPathComponent(src.lastPathComponent)
+                try? FileManager.default.removeItem(at: dst)
+                try FileManager.default.copyItem(at: src, to: dst)
+                return dst
+            }.value
+            let probed = await Task.detached { TVCTranscoder.probe(dst.path) }.value
+            sourceAssetID = nil   // Files import has no Photos asset to replace
+            adopt(url: dst, info: probed)
+        } catch {
+            loadError = error.localizedDescription
+        }
+    }
+
+    private func adopt(url: URL, info probed: TVCMediaInfo) {
         inputURL = url
         baseName = url.deletingPathExtension().lastPathComponent
-        let probed = TVCTranscoder.probe(url.path)
         info = probed
         if !probed.ok { loadError = probed.error ?? "Unsupported file." }
     }
@@ -220,7 +232,10 @@ struct PickedMovie: Transferable {
             let dst = SetupView.tempDir()
                 .appendingPathComponent(received.file.lastPathComponent)
             try? FileManager.default.removeItem(at: dst)
-            try FileManager.default.copyItem(at: received.file, to: dst)
+            // The picker already exported the asset to `received.file` (one full
+            // copy). Move it rather than copy again to avoid a second full copy.
+            do { try FileManager.default.moveItem(at: received.file, to: dst) }
+            catch { try FileManager.default.copyItem(at: received.file, to: dst) }
             return PickedMovie(url: dst)
         }
     }
