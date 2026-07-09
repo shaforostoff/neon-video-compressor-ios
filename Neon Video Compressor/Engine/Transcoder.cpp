@@ -285,6 +285,8 @@ void Transcoder::run(TranscodeOptions opts) {
         video.outStream->avg_frame_rate = video.enc->framerate;
         video.outIndex = video.outStream->index;
         copyDisplayMatrix(ifmt->streams[video.inIndex], video.outStream); // keep rotation
+        av_dict_copy(&video.outStream->metadata,
+                     ifmt->streams[video.inIndex]->metadata, 0); // keep stream tags
         video.scaled = av_frame_alloc();
         return 0;
     };
@@ -297,6 +299,10 @@ void Transcoder::run(TranscodeOptions opts) {
             int e = avio_open(&ofmt->pb, opts.outputPath.c_str(), AVIO_FLAG_WRITE);
             if (e < 0) return e;
         }
+        // Carry over the source container tags (creation date, GPS location,
+        // camera make/model, etc.) so the output — and any Photos asset made
+        // from it — keeps the original's date and location.
+        av_dict_copy(&ofmt->metadata, ifmt->metadata, 0);
         AVDictionary *muxOpts = nullptr;
         if (opts.faststart) av_dict_set(&muxOpts, "movflags", "+faststart", 0);
         int e = avformat_write_header(ofmt, &muxOpts);
@@ -351,6 +357,7 @@ void Transcoder::run(TranscodeOptions opts) {
             video.outStream->time_base = in->time_base;
             video.outIndex = video.outStream->index;
             copyDisplayMatrix(in, video.outStream); // keep rotation
+            av_dict_copy(&video.outStream->metadata, in->metadata, 0); // keep stream tags
         } else {
             const AVCodec *decoder = avcodec_find_decoder(in->codecpar->codec_id);
             videoEncoder = avcodec_find_encoder_by_name("libx265");
@@ -395,6 +402,7 @@ void Transcoder::run(TranscodeOptions opts) {
             audio.outStream->codecpar->codec_tag = 0;
             audio.outStream->time_base = in->time_base;
             audio.outIndex = audio.outStream->index;
+            av_dict_copy(&audio.outStream->metadata, in->metadata, 0); // keep stream tags
         } else {
             const AVCodec *decoder = avcodec_find_decoder(in->codecpar->codec_id);
             const AVCodec *encoder = avcodec_find_encoder_by_name("aac_at");
@@ -432,6 +440,8 @@ void Transcoder::run(TranscodeOptions opts) {
             avcodec_parameters_from_context(audio.outStream->codecpar, audio.enc);
             audio.outStream->time_base = audio.enc->time_base;
             audio.outIndex = audio.outStream->index;
+            av_dict_copy(&audio.outStream->metadata,
+                         ifmt->streams[audio.inIndex]->metadata, 0); // keep stream tags
 
             // resampler: decoder output -> encoder input
             swr_alloc_set_opts2(&audio.swr,
