@@ -6,6 +6,7 @@
 #include <chrono>
 #include <vector>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <algorithm>
 #include <thread>
@@ -49,19 +50,23 @@ double processCpuSeconds() {
     return user + sys;
 }
 
-// Feature toggle for the crash-surviving debug log (tvc_debug.log). Disabled by
-// default; define TVC_DEBUG_LOG=1 (e.g. via build settings / -DTVC_DEBUG_LOG=1)
-// to re-enable it. When off, dbg() is a no-op and no log file is ever touched.
+// Feature toggle for the crash-surviving debug log (tvc_debug.log). Define
+// TVC_DEBUG_LOG=1 (e.g. via build settings / -DTVC_DEBUG_LOG=1) to enable it.
+// When off, dbg() is a no-op and no log file is ever touched.
+// NOTE: temporarily defaulted ON for a sideloaded color-diagnosis build — set
+// this back to 0 before shipping.
 #ifndef TVC_DEBUG_LOG
-#define TVC_DEBUG_LOG 0
+#define TVC_DEBUG_LOG 1
 #endif
 constexpr bool kDebugLog = TVC_DEBUG_LOG;
 
 // Crash-surviving diagnostics: appended + flushed immediately so partial
-// output remains on disk even if the process segfaults mid-encode.
-std::string debugLogPath(const std::string &outputPath) {
-    size_t slash = outputPath.find_last_of('/');
-    std::string dir = slash == std::string::npos ? "." : outputPath.substr(0, slash);
+// output remains on disk even if the process segfaults mid-encode. Always
+// written to the app's Documents folder so it's retrievable from the Files app
+// (rather than next to the output, which for previews is a temp dir).
+std::string debugLogPath(const std::string & /*outputPath*/) {
+    const char *home = getenv("HOME");
+    std::string dir = home ? std::string(home) + "/Documents" : ".";
     return dir + "/tvc_debug.log";
 }
 
@@ -77,6 +82,17 @@ std::string avErr(int err) {
     char buf[AV_ERROR_MAX_STRING_SIZE] = {0};
     av_strerror(err, buf, sizeof(buf));
     return std::string(buf);
+}
+
+// Human-readable color signalling, e.g. "range=tv primaries=bt2020 trc=arib-std-b67
+// matrix=bt2020nc". This is the key info for diagnosing washed-out / brightness
+// shifts: compare the SOURCE line against the OUTPUT line in the log.
+std::string colorDesc(int range, int primaries, int trc, int space) {
+    auto nn = [](const char *s) { return s ? s : "unspecified"; };
+    return std::string("range=") + nn(av_color_range_name((AVColorRange)range)) +
+           " primaries=" + nn(av_color_primaries_name((AVColorPrimaries)primaries)) +
+           " trc=" + nn(av_color_transfer_name((AVColorTransferCharacteristic)trc)) +
+           " matrix=" + nn(av_color_space_name((AVColorSpace)space));
 }
 
 // One output stream's worth of state (either a copy or an encode).
@@ -306,12 +322,10 @@ void Transcoder::run(TranscodeOptions opts) {
         dbg(dbgPath, "encoder opened: " + std::to_string(video.enc->width) + "x" +
                      std::to_string(video.enc->height) +
                      " pix_fmt=" + (av_get_pix_fmt_name(video.enc->pix_fmt) ? av_get_pix_fmt_name(video.enc->pix_fmt) : "?") +
-                     " primaries=" + std::to_string((int)video.enc->color_primaries) +
-                     " trc=" + std::to_string((int)video.enc->color_trc) +
-                     " colorspace=" + std::to_string((int)video.enc->colorspace) +
-                     " range=" + std::to_string((int)video.enc->color_range) +
                      " thread_count=" + std::to_string(video.enc->thread_count) +
                      " x265params=" + x265Params);
+        dbg(dbgPath, "OUTPUT color: " + colorDesc(video.enc->color_range,
+                     video.enc->color_primaries, video.enc->color_trc, video.enc->colorspace));
         video.outStream = avformat_new_stream(ofmt, nullptr);
         avcodec_parameters_from_context(video.outStream->codecpar, video.enc);
         video.outStream->time_base = video.enc->time_base;
@@ -405,11 +419,10 @@ void Transcoder::run(TranscodeOptions opts) {
             dbg(dbgPath, "decoder opened: " + std::string(decoder->name) +
                          " " + std::to_string(video.dec->width) + "x" + std::to_string(video.dec->height) +
                          " pix_fmt=" + (av_get_pix_fmt_name(video.dec->pix_fmt) ? av_get_pix_fmt_name(video.dec->pix_fmt) : "?") +
-                         " color_range=" + std::to_string((int)video.dec->color_range) +
-                         " color_trc=" + std::to_string((int)video.dec->color_trc) +
-                         " colorspace=" + std::to_string((int)video.dec->colorspace) +
                          " profile=" + std::to_string(video.dec->profile) +
                          " field_order=" + std::to_string((int)video.dec->field_order));
+            dbg(dbgPath, "SOURCE color: " + colorDesc(video.dec->color_range,
+                         video.dec->color_primaries, video.dec->color_trc, video.dec->colorspace));
 
             // Some decoders report 0x0 in codecpar until the first frame is
             // decoded. Only open the encoder now if we already have a real size;
