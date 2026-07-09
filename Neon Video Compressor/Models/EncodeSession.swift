@@ -64,6 +64,7 @@ final class EncodeSession {
         o.preset = job.settings.preset.rawValue
         o.audioProfile = job.settings.audioProfile.tvc
         o.audioBitrate = job.settings.audioBitrateKbps * 1000
+        o.forceEightBit = job.settings.forceEightBit
 
         transcoder.onProgress = { [weak self] processed, total, speed, inBytes, totalIn, outBytes in
             guard let self else { return }

@@ -97,6 +97,12 @@ struct SetupView: View {
                 Picker("Preset", selection: $settings.preset) {
                     ForEach(X265Preset.allCases) { Text($0.rawValue).tag($0) }
                 }
+                Picker("Bit depth", selection: $settings.forceEightBit) {
+                    Text("Match source").tag(false)
+                    Text("Force 8-bit").tag(true)
+                }
+                Text("10-bit preserves HDR and smooth gradients; 8-bit is smaller and more widely compatible.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         } else {
             Section("Video") { Text("Copied without re-encoding").foregroundStyle(.secondary) }

@@ -82,6 +82,7 @@ final class PreviewController {
         o.preset = X265Preset.ultrafast.rawValue
         o.audioProfile = job.settings.audioProfile.tvc
         o.audioBitrate = job.settings.audioBitrateKbps * 1000
+        o.forceEightBit = job.settings.forceEightBit
         o.durationLimitSeconds = Self.previewSeconds
 
         transcoder.onProgress = { [weak self] processed, total, _, _, _, _ in

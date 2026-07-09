@@ -40,6 +40,7 @@ typedef NS_ENUM(NSInteger, TVCAudioProfile) {
 @property (nonatomic) TVCAudioProfile audioProfile;
 @property (nonatomic) NSInteger audioBitrate;   // bits/sec
 @property (nonatomic) double durationLimitSeconds;  // stop after N seconds (0 = whole file)
+@property (nonatomic) BOOL forceEightBit;       // downgrade 10/12-bit sources to 8-bit
 @end
 
 @interface TVCTranscoder : NSObject

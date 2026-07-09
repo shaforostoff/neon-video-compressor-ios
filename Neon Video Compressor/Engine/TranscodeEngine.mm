@@ -69,6 +69,7 @@ static std::string cppstr(NSString *s) { return s ? std::string(s.UTF8String) : 
     }
     o.audioBitrate = (int)options.audioBitrate;
     o.durationLimitSeconds = options.durationLimitSeconds;
+    o.forceEightBit = options.forceEightBit;
 
     __weak TVCTranscoder *weakSelf = self;
     _core->onProgress = [weakSelf](const tvc::Progress &p) {

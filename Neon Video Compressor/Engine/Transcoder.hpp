@@ -29,6 +29,7 @@ struct TranscodeOptions {
     int audioBitrate = 40000;           // bits/sec (e.g. -b:a 40k)
     bool faststart = true;              // +faststart
     double durationLimitSeconds = 0;    // stop after this many seconds (0 = whole file)
+    bool forceEightBit = false;         // downgrade 10/12-bit sources to 8-bit output
 };
 
 struct MediaInfo {

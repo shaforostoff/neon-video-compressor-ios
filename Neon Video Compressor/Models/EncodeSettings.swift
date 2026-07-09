@@ -43,8 +43,28 @@ struct EncodeSettings: Hashable, Codable {
     var preset: X265Preset = .slow
     var audioProfile: AudioProfileOption = .heAAC
     var audioBitrateKbps: Int = 40
+    /// Downgrade 10/12-bit (HDR) sources to 8-bit output — smaller files and
+    /// wider compatibility at the cost of color depth. Off = match the source.
+    var forceEightBit: Bool = false
 
     static let bitrateChoices = [24, 32, 40, 48, 64, 96, 128]
+
+    init() {}
+
+    // Decode leniently so adding a new option doesn't discard a user's saved
+    // settings — any missing key falls back to its default.
+    enum CodingKeys: String, CodingKey {
+        case mode, crf, preset, audioProfile, audioBitrateKbps, forceEightBit
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mode = try c.decodeIfPresent(ConversionMode.self, forKey: .mode) ?? .both
+        crf = try c.decodeIfPresent(Double.self, forKey: .crf) ?? 30
+        preset = try c.decodeIfPresent(X265Preset.self, forKey: .preset) ?? .slow
+        audioProfile = try c.decodeIfPresent(AudioProfileOption.self, forKey: .audioProfile) ?? .heAAC
+        audioBitrateKbps = try c.decodeIfPresent(Int.self, forKey: .audioBitrateKbps) ?? 40
+        forceEightBit = try c.decodeIfPresent(Bool.self, forKey: .forceEightBit) ?? false
+    }
 
     // MARK: persistence — remembers the user's last-chosen options across launches.
 
