@@ -267,10 +267,19 @@ void Transcoder::run(TranscodeOptions opts) {
         // fall back to 8-bit if this x265 build can't open a 10-bit encoder.
         const AVPixFmtDescriptor *srcDesc = av_pix_fmt_desc_get(video.dec->pix_fmt);
         bool srcTenBit = srcDesc && srcDesc->comp[0].depth >= 10;
+        // Try the source's native depth first, then the other depth as a fallback,
+        // so we cope with whatever this x265 build supports (8-bit only, 10-bit
+        // only, or a multilib). 10-bit source on an 8-bit build → 8-bit; 8-bit
+        // source on a 10-bit-only build → 10-bit.
         AVPixelFormat candidates[2];
         int nCand = 0;
-        if (srcTenBit) candidates[nCand++] = AV_PIX_FMT_YUV420P10LE;
-        candidates[nCand++] = AV_PIX_FMT_YUV420P;
+        if (srcTenBit) {
+            candidates[nCand++] = AV_PIX_FMT_YUV420P10LE;
+            candidates[nCand++] = AV_PIX_FMT_YUV420P;
+        } else {
+            candidates[nCand++] = AV_PIX_FMT_YUV420P;
+            candidates[nCand++] = AV_PIX_FMT_YUV420P10LE;
+        }
 
         AVRational fr = ifmt->streams[video.inIndex]->avg_frame_rate.num
                             ? ifmt->streams[video.inIndex]->avg_frame_rate
