@@ -21,6 +21,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavutil/samplefmt.h>
 #include <libavutil/mathematics.h>
+#include <libavutil/pixdesc.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 }
@@ -246,39 +247,71 @@ void Transcoder::run(TranscodeOptions opts) {
     // Factored out so it can run either up front (size known from codecpar) or
     // lazily on the first decoded frame (codecpar reported 0x0).
     auto setupVideoEncoder = [&](int w, int h) -> int {
-        video.enc = avcodec_alloc_context3(videoEncoder);
-        video.enc->width = w;
-        video.enc->height = h;
-        video.enc->pix_fmt = AV_PIX_FMT_YUV420P;
-        video.enc->sample_aspect_ratio = video.dec->sample_aspect_ratio;
-        {
-            AVRational fr = ifmt->streams[video.inIndex]->avg_frame_rate.num
-                                ? ifmt->streams[video.inIndex]->avg_frame_rate
-                                : AVRational{30, 1};
-            video.enc->time_base = av_inv_q(fr);
-            video.enc->framerate = fr;
-        }
+        // Match the source bit depth so 10-bit HDR isn't crushed to 8-bit, then
+        // fall back to 8-bit if this x265 build can't open a 10-bit encoder.
+        const AVPixFmtDescriptor *srcDesc = av_pix_fmt_desc_get(video.dec->pix_fmt);
+        bool srcTenBit = srcDesc && srcDesc->comp[0].depth >= 10;
+        AVPixelFormat candidates[2];
+        int nCand = 0;
+        if (srcTenBit) candidates[nCand++] = AV_PIX_FMT_YUV420P10LE;
+        candidates[nCand++] = AV_PIX_FMT_YUV420P;
+
+        AVRational fr = ifmt->streams[video.inIndex]->avg_frame_rate.num
+                            ? ifmt->streams[video.inIndex]->avg_frame_rate
+                            : AVRational{30, 1};
         char crfStr[16];
         snprintf(crfStr, sizeof(crfStr), "%d", opts.crf);
-        av_opt_set(video.enc->priv_data, "preset", opts.preset.c_str(), 0);
-        av_opt_set(video.enc->priv_data, "crf", crfStr, 0);
-        // Let x265 build its own CPU-sized thread pool (multithreaded). The
-        // null-payload-NAL crash that first looked threading-related was actually
-        // FFmpeg's libx265 scalable multi-layer output path (X265_BUILD >= 210),
-        // fixed at build time by the ffmpeg-n7.1-libx265-single-picture patch.
-        // Do NOT force "pools=none": with no pool x265 still auto-detects
-        // frameNumThreads and spawns pool-less FrameEncoders that null-deref.
         std::string x265Params = opts.x265Params;
-        if (!x265Params.empty())
-            av_opt_set(video.enc->priv_data, "x265-params", x265Params.c_str(), 0);
-        video.enc->codec_tag = MKTAG('h','v','c','1');
-        if (ofmt->oformat->flags & AVFMT_GLOBALHEADER)
-            video.enc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-        int e = avcodec_open2(video.enc, videoEncoder, nullptr);
+
+        int e = AVERROR(EINVAL);
+        for (int i = 0; i < nCand; ++i) {
+            if (video.enc) avcodec_free_context(&video.enc);
+            video.enc = avcodec_alloc_context3(videoEncoder);
+            video.enc->width = w;
+            video.enc->height = h;
+            video.enc->pix_fmt = candidates[i];
+            video.enc->sample_aspect_ratio = video.dec->sample_aspect_ratio;
+            video.enc->time_base = av_inv_q(fr);
+            video.enc->framerate = fr;
+            // Carry the source's color signalling to the encoder — and via
+            // avcodec_parameters_from_context below onto the output track — so a
+            // wide-gamut / HDR (e.g. HLG BT.2020) clip isn't rendered as SDR BT.709.
+            video.enc->color_primaries        = video.dec->color_primaries;
+            video.enc->color_trc              = video.dec->color_trc;
+            video.enc->colorspace             = video.dec->colorspace;
+            video.enc->color_range            = video.dec->color_range;
+            video.enc->chroma_sample_location = video.dec->chroma_sample_location;
+
+            av_opt_set(video.enc->priv_data, "preset", opts.preset.c_str(), 0);
+            av_opt_set(video.enc->priv_data, "crf", crfStr, 0);
+            // Let x265 build its own CPU-sized thread pool (multithreaded). The
+            // null-payload-NAL crash that first looked threading-related was actually
+            // FFmpeg's libx265 scalable multi-layer output path (X265_BUILD >= 210),
+            // fixed at build time by the ffmpeg-n7.1-libx265-single-picture patch.
+            // Do NOT force "pools=none": with no pool x265 still auto-detects
+            // frameNumThreads and spawns pool-less FrameEncoders that null-deref.
+            if (!x265Params.empty())
+                av_opt_set(video.enc->priv_data, "x265-params", x265Params.c_str(), 0);
+            video.enc->codec_tag = MKTAG('h','v','c','1');
+            if (ofmt->oformat->flags & AVFMT_GLOBALHEADER)
+                video.enc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+            e = avcodec_open2(video.enc, videoEncoder, nullptr);
+            if (e >= 0) break;
+            dbg(dbgPath, std::string("encoder open failed for ") +
+                         (av_get_pix_fmt_name(candidates[i]) ? av_get_pix_fmt_name(candidates[i]) : "?") +
+                         ": " + avErr(e));
+        }
         if (e < 0) return e;
         dbg(dbgPath, "encoder opened: " + std::to_string(video.enc->width) + "x" +
-                     std::to_string(video.enc->height) + " thread_count=" +
-                     std::to_string(video.enc->thread_count) + " x265params=" + x265Params);
+                     std::to_string(video.enc->height) +
+                     " pix_fmt=" + (av_get_pix_fmt_name(video.enc->pix_fmt) ? av_get_pix_fmt_name(video.enc->pix_fmt) : "?") +
+                     " primaries=" + std::to_string((int)video.enc->color_primaries) +
+                     " trc=" + std::to_string((int)video.enc->color_trc) +
+                     " colorspace=" + std::to_string((int)video.enc->colorspace) +
+                     " range=" + std::to_string((int)video.enc->color_range) +
+                     " thread_count=" + std::to_string(video.enc->thread_count) +
+                     " x265params=" + x265Params);
         video.outStream = avformat_new_stream(ofmt, nullptr);
         avcodec_parameters_from_context(video.outStream->codecpar, video.enc);
         video.outStream->time_base = video.enc->time_base;
@@ -623,12 +656,18 @@ void Transcoder::run(TranscodeOptions opts) {
                         if (!video.sws) {
                             video.sws = sws_getContext(
                                 frame->width, frame->height, (AVPixelFormat)frame->format,
-                                video.enc->width, video.enc->height, AV_PIX_FMT_YUV420P,
+                                video.enc->width, video.enc->height, video.enc->pix_fmt,
                                 SWS_BILINEAR, nullptr, nullptr, nullptr);
-                            video.scaled->format = AV_PIX_FMT_YUV420P;
+                            video.scaled->format = video.enc->pix_fmt;
                             video.scaled->width = video.enc->width;
                             video.scaled->height = video.enc->height;
                             av_frame_get_buffer(video.scaled, 0);
+                            // Tag the frames handed to the encoder with the source
+                            // color info so it isn't assumed to be SDR BT.709.
+                            video.scaled->color_primaries = video.enc->color_primaries;
+                            video.scaled->color_trc       = video.enc->color_trc;
+                            video.scaled->colorspace      = video.enc->colorspace;
+                            video.scaled->color_range     = video.enc->color_range;
                             dbg(dbgPath, std::string("first decoded frame: ") +
                                          (av_get_pix_fmt_name((AVPixelFormat)frame->format) ?
                                           av_get_pix_fmt_name((AVPixelFormat)frame->format) : "?") +
