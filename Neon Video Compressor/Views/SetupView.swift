@@ -3,6 +3,7 @@
 //  Screen 1: pick a video (Photos or Files) and choose encoding options.
 //
 import SwiftUI
+import Photos
 import PhotosUI
 import UniformTypeIdentifiers
 
@@ -13,6 +14,7 @@ struct SetupView: View {
     @State private var baseName: String = "video"
 
     @State private var photoItem: PhotosPickerItem?
+    @State private var sourceAssetID: String?   // Photos localIdentifier of the picked video
     @State private var showFileImporter = false
     @State private var loading = false
     @State private var loadError: String?
@@ -44,7 +46,8 @@ struct SetupView: View {
     private var sourceSection: some View {
         Section("Source") {
             HStack {
-                PhotosPicker(selection: $photoItem, matching: .videos) {
+                PhotosPicker(selection: $photoItem, matching: .videos,
+                             photoLibrary: .shared()) {
                     Label("Photos", systemImage: "photo.on.rectangle")
                 }
                 Spacer()
@@ -144,7 +147,10 @@ struct SetupView: View {
         defer { loading = false }
         do {
             if let movie = try await item.loadTransferable(type: PickedMovie.self) {
-                await MainActor.run { adopt(url: movie.url) }
+                await MainActor.run {
+                    sourceAssetID = item.itemIdentifier   // localIdentifier, for "Replace original"
+                    adopt(url: movie.url)
+                }
             } else {
                 loadError = "Could not load that video."
             }
@@ -163,6 +169,7 @@ struct SetupView: View {
                 let dst = Self.tempDir().appendingPathComponent(src.lastPathComponent)
                 try? FileManager.default.removeItem(at: dst)
                 try FileManager.default.copyItem(at: src, to: dst)
+                sourceAssetID = nil   // Files import has no Photos asset to replace
                 adopt(url: dst)
             } catch { loadError = error.localizedDescription }
         case .failure(let err):
@@ -183,7 +190,8 @@ struct SetupView: View {
         let safe = baseName.isEmpty ? "video" : baseName
         let out = Self.docsDir().appendingPathComponent("\(safe)_hevc.mp4")
         return EncodeJob(inputURL: inputURL, outputURL: out,
-                         settings: settings, totalSeconds: info.durationSeconds)
+                         settings: settings, totalSeconds: info.durationSeconds,
+                         sourceAssetID: sourceAssetID)
     }
 
     // MARK: helpers

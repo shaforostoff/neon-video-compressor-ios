@@ -70,4 +70,7 @@ struct EncodeJob: Hashable, Identifiable {
     let outputURL: URL
     let settings: EncodeSettings
     let totalSeconds: Double
+    /// Photos `localIdentifier` of the source asset, when imported from Photos.
+    /// nil for Files imports — enables the "Replace original" flow.
+    var sourceAssetID: String? = nil
 }

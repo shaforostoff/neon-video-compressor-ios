@@ -371,7 +371,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save converted videos to your photo library.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick recorded videos to convert.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick videos to convert, and replace an original with its compressed version when you choose to.";
 				SWIFT_OBJC_BRIDGING_HEADER = "Neon Video Compressor/Neon Video Compressor-Bridging-Header.h";
 				DEVELOPMENT_ASSET_PATHS = "\"Neon Video Compressor/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
@@ -404,7 +404,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save converted videos to your photo library.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick recorded videos to convert.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pick videos to convert, and replace an original with its compressed version when you choose to.";
 				SWIFT_OBJC_BRIDGING_HEADER = "Neon Video Compressor/Neon Video Compressor-Bridging-Header.h";
 				DEVELOPMENT_ASSET_PATHS = "\"Neon Video Compressor/Preview Content\"";
 				ENABLE_PREVIEWS = YES;

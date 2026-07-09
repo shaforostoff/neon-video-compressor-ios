@@ -13,6 +13,7 @@ struct ProgressView2: View {
     @State private var session = EncodeSession()
     @State private var started = false
     @State private var savedToPhotos = false
+    @State private var replacedOriginal = false
     @State private var saveError: String?
 
     var body: some View {
@@ -120,8 +121,14 @@ struct ProgressView2: View {
                 .font(.system(size: 56)).foregroundStyle(.green)
             Text("Done").font(.title2).bold()
             if savedToPhotos {
-                Label("Saved to Photos", systemImage: "checkmark")
+                Label(replacedOriginal ? "Replaced original in Photos" : "Saved to Photos",
+                      systemImage: "checkmark")
                     .foregroundStyle(.secondary)
+                if replacedOriginal {
+                    Text("The original moved to Recently Deleted, and frees space once that empties.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             } else if let url = session.outputURL {
                 Text(url.lastPathComponent).font(.footnote).foregroundStyle(.secondary)
                 Text(fileSize(url)).font(.footnote).foregroundStyle(.secondary)
@@ -137,6 +144,15 @@ struct ProgressView2: View {
                     Label("Save to Photos", systemImage: "photo.badge.plus")
                         .frame(maxWidth: .infinity)
                 }.buttonStyle(.bordered)
+
+                if let assetID = job.sourceAssetID {
+                    Button(role: .destructive) {
+                        replaceOriginal(url, assetID: assetID)
+                    } label: {
+                        Label("Replace original in Photos", systemImage: "arrow.triangle.2.circlepath")
+                            .frame(maxWidth: .infinity)
+                    }.buttonStyle(.bordered)
+                }
             }
             if let saveError { Text(saveError).font(.caption).foregroundStyle(.red) }
             Button("Convert another") { dismiss() }.padding(.top, 8)
@@ -180,6 +196,50 @@ struct ProgressView2: View {
                         savedToPhotos = true
                     } else {
                         saveError = err?.localizedDescription ?? "Save failed."
+                    }
+                }
+            }
+        }
+    }
+
+    /// Save the compressed video to Photos, then delete the source asset it was
+    /// made from. Ordered add-then-delete so the compressed copy is safely in
+    /// Photos before the original is touched — a declined/failed delete never
+    /// costs the user their video. iOS shows its own confirmation for the delete.
+    private func replaceOriginal(_ url: URL, assetID: String) {
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+            guard status == .authorized else {
+                DispatchQueue.main.async {
+                    saveError = "Full Photos access is needed to replace the original."
+                }
+                return
+            }
+            // 1) Add the compressed video.
+            PHPhotoLibrary.shared().performChanges {
+                PHAssetCreationRequest.forAsset()
+                    .addResource(with: .video, fileURL: url, options: nil)
+            } completionHandler: { ok, err in
+                guard ok else {
+                    DispatchQueue.main.async {
+                        saveError = err?.localizedDescription ?? "Save failed."
+                    }
+                    return
+                }
+                // Compressed copy is in Photos — drop the app's Documents duplicate.
+                DispatchQueue.main.async {
+                    session.discardOutput()
+                    savedToPhotos = true
+                }
+                // 2) Delete the original (system prompts the user to confirm).
+                let originals = PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+                guard originals.count > 0 else { return }   // original already gone; leave as saved
+                PHPhotoLibrary.shared().performChanges {
+                    PHAssetChangeRequest.deleteAssets(originals)
+                } completionHandler: { delOk, _ in
+                    DispatchQueue.main.async {
+                        if delOk { replacedOriginal = true }
+                        // Declined/failed delete: the compressed copy is still saved,
+                        // so the UI simply stays at "Saved to Photos".
                     }
                 }
             }
