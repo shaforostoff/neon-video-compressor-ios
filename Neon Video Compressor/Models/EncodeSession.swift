@@ -43,6 +43,14 @@ final class EncodeSession {
         return max(0, (totalSeconds - processedSeconds) / speed)
     }
 
+    /// Delete the encoded file from the app's Documents folder. Called once the
+    /// video has been copied into Photos, so we don't leave a duplicate behind.
+    func discardOutput() {
+        guard let url = outputURL else { return }
+        try? FileManager.default.removeItem(at: url)
+        outputURL = nil
+    }
+
     func start(job: EncodeJob) {
         outputURL = job.outputURL
         totalSeconds = job.totalSeconds

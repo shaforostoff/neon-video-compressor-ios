@@ -119,7 +119,10 @@ struct ProgressView2: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 56)).foregroundStyle(.green)
             Text("Done").font(.title2).bold()
-            if let url = session.outputURL {
+            if savedToPhotos {
+                Label("Saved to Photos", systemImage: "checkmark")
+                    .foregroundStyle(.secondary)
+            } else if let url = session.outputURL {
                 Text(url.lastPathComponent).font(.footnote).foregroundStyle(.secondary)
                 Text(fileSize(url)).font(.footnote).foregroundStyle(.secondary)
 
@@ -131,10 +134,9 @@ struct ProgressView2: View {
                 Button {
                     saveToPhotos(url)
                 } label: {
-                    Label(savedToPhotos ? "Saved to Photos" : "Save to Photos",
-                          systemImage: savedToPhotos ? "checkmark" : "photo.badge.plus")
+                    Label("Save to Photos", systemImage: "photo.badge.plus")
                         .frame(maxWidth: .infinity)
-                }.buttonStyle(.bordered).disabled(savedToPhotos)
+                }.buttonStyle(.bordered)
             }
             if let saveError { Text(saveError).font(.caption).foregroundStyle(.red) }
             Button("Convert another") { dismiss() }.padding(.top, 8)
@@ -171,8 +173,14 @@ struct ProgressView2: View {
                     .addResource(with: .video, fileURL: url, options: nil)
             } completionHandler: { ok, err in
                 DispatchQueue.main.async {
-                    if ok { savedToPhotos = true }
-                    else { saveError = err?.localizedDescription ?? "Save failed." }
+                    if ok {
+                        // The video now lives in Photos — drop the duplicate copy
+                        // sitting in the app's Documents folder.
+                        session.discardOutput()
+                        savedToPhotos = true
+                    } else {
+                        saveError = err?.localizedDescription ?? "Save failed."
+                    }
                 }
             }
         }
