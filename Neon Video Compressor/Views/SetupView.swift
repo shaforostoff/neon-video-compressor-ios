@@ -3,6 +3,7 @@
 //  Screen 1: pick a video (Photos or Files) and choose encoding options.
 //
 import SwiftUI
+import AVFoundation
 import Photos
 import PhotosUI
 import UniformTypeIdentifiers
@@ -144,6 +145,24 @@ struct SetupView: View {
         guard let item else { return }
         loading = true; loadError = nil
         defer { loading = false }
+
+        sourceAssetID = item.itemIdentifier   // localIdentifier, for "Replace original"
+
+        // Fast path: hand the encoder the original library file in place, with no
+        // copy at all. Only works for a plain local asset the encoder can open —
+        // the probe below is the capability test.
+        if let id = item.itemIdentifier,
+           let original = await originalFileURL(forAssetID: id) {
+            let probed = await Task.detached { TVCTranscoder.probe(original.path) }.value
+            if probed.ok {
+                adopt(url: original, info: probed)
+                return
+            }
+            // ffmpeg couldn't read it after all — fall through to the export copy.
+        }
+
+        // Fallback: export a temp copy (iCloud, slo-mo/edited, no permission, or
+        // an original the sandbox won't let us read directly).
         do {
             guard let movie = try await item.loadTransferable(type: PickedMovie.self) else {
                 loadError = "Could not load that video."
@@ -151,10 +170,44 @@ struct SetupView: View {
             }
             // Probe off the main thread so reading the file header doesn't hitch the UI.
             let probed = await Task.detached { TVCTranscoder.probe(movie.url.path) }.value
-            sourceAssetID = item.itemIdentifier   // localIdentifier, for "Replace original"
             adopt(url: movie.url, info: probed)
         } catch {
             loadError = error.localizedDescription
+        }
+    }
+
+    /// Resolve a directly-readable file URL for a picked Photos asset so the
+    /// encoder can read the original in place — no export, no copy. Returns nil
+    /// (caller falls back to copying) when we lack read access, the asset lives
+    /// in iCloud, or it's slo-mo/edited/composited (no single backing file).
+    private func originalFileURL(forAssetID id: String) async -> URL? {
+        guard await requestPhotoReadAccess() == .authorized,
+              let asset = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject
+        else { return nil }
+
+        let opts = PHVideoRequestOptions()
+        opts.isNetworkAccessAllowed = false          // no iCloud download here — fall back instead
+        opts.deliveryMode = .highQualityFormat       // the untranscoded original
+        opts.version = .current                      // include edits (edited assets → composition → nil)
+
+        let avAsset: AVAsset? = await withCheckedContinuation { cont in
+            var resumed = false
+            PHImageManager.default().requestAVAsset(forVideo: asset, options: opts) { av, _, _ in
+                if resumed { return }               // requestAVAsset can call back more than once
+                resumed = true
+                cont.resume(returning: av)
+            }
+        }
+        // AVComposition (slo-mo/edited) has no single URL → nil → export fallback.
+        return (avAsset as? AVURLAsset)?.url
+    }
+
+    /// Current Photos read/write authorization, prompting once if undetermined.
+    private func requestPhotoReadAccess() async -> PHAuthorizationStatus {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .notDetermined else { return status }
+        return await withCheckedContinuation { cont in
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { cont.resume(returning: $0) }
         }
     }
 
