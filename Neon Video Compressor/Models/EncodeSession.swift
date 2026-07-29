@@ -21,6 +21,10 @@ final class EncodeSession {
     var outputBytes: Int64 = 0       // written to the new file so far
     var ramBytes: Int64 = 0          // app memory footprint, sampled each tick
     private(set) var outputURL: URL?
+    /// Which VideoToolbox quality properties the device's encoder accepted.
+    /// Empty for the x265 backend. Shown on the result screen so unsupported
+    /// knobs are visible rather than silently ignored.
+    private(set) var encoderNotes: [String] = []
 
     /// When on, keep encoding while the screen is locked via a silent audio
     /// session (costs battery). User-controlled from the progress screen.
@@ -28,7 +32,8 @@ final class EncodeSession {
         didSet { if keepAwake != oldValue { updateKeepAlive() } }
     }
 
-    private let transcoder = TVCTranscoder()
+    /// Chosen per job in `start(job:)` — x265 or the hardware encoder.
+    private var backend: TranscodeBackend?
     private let keepAlive = KeepAliveAudio()
     private var bgTask: UIBackgroundTaskIdentifier = .invalid
     private var autoPaused = false
@@ -55,45 +60,40 @@ final class EncodeSession {
         outputURL = job.outputURL
         totalSeconds = job.totalSeconds
 
-        let o = TVCEncodeOptions()
-        o.inputPath = job.inputURL.path
-        o.outputPath = job.outputURL.path
-        o.videoMode = job.settings.videoAction.tvc
-        o.audioMode = job.settings.audioAction.tvc
-        o.crf = Int(job.settings.crf)
-        o.preset = job.settings.preset.rawValue
-        o.audioProfile = job.settings.audioProfile.tvc
-        o.audioBitrate = job.settings.audioBitrateKbps * 1000
-        o.forceEightBit = job.settings.forceEightBit
+        let backend = makeTranscodeBackend(for: job.settings)
+        self.backend = backend
 
-        transcoder.onProgress = { [weak self] processed, total, speed, inBytes, totalIn, outBytes in
+        backend.onProgress = { [weak self] p in
             guard let self else { return }
-            self.processedSeconds = processed
-            if total > 0 { self.totalSeconds = total }
-            self.speed = speed
-            self.inputBytes = inBytes
-            if totalIn > 0 { self.totalInputBytes = totalIn }
-            self.outputBytes = outBytes
+            self.processedSeconds = p.processedSeconds
+            if p.totalSeconds > 0 { self.totalSeconds = p.totalSeconds }
+            self.speed = p.speed
+            self.inputBytes = p.inputBytes
+            if p.totalInputBytes > 0 { self.totalInputBytes = p.totalInputBytes }
+            self.outputBytes = p.outputBytes
             self.ramBytes = currentMemoryFootprint()
         }
-        transcoder.onFinished = { [weak self] success, error in
+        backend.onFinished = { [weak self] success, error, notes in
             guard let self else { return }
             self.endBackgroundTask()
             self.keepAlive.stop()   // encode is over — release the audio session
+            self.encoderNotes = notes
             if success { self.phase = .finished }
             else if error == "cancelled" { self.phase = .cancelled }
             else { self.phase = .failed(error ?? "Unknown error") }
         }
 
         phase = .running
-        transcoder.start(with: o)
+        backend.start(BackendOptions(inputURL: job.inputURL,
+                                     outputURL: job.outputURL,
+                                     settings: job.settings))
         updateKeepAlive()
     }
 
     // MARK: user controls
-    func pause() { autoPaused = false; transcoder.pause(); phase = .paused }
-    func resume() { autoPaused = false; transcoder.resume(); phase = .running }
-    func cancel() { transcoder.cancel() }
+    func pause() { autoPaused = false; backend?.pause(); phase = .paused }
+    func resume() { autoPaused = false; backend?.resume(); phase = .running }
+    func cancel() { backend?.cancel() }
 
     // MARK: best-effort background handling
     func didEnterBackground() {
@@ -102,7 +102,7 @@ final class EncodeSession {
         // locked. Pace the encoder to stay under iOS's background CPU limit
         // (~80%/60s), which otherwise kills the process mid-encode.
         if keepAwake && keepAlive.isActive {
-            transcoder.setThrottled(true)
+            backend?.setThrottled(true)
             return
         }
         bgTask = UIApplication.shared.beginBackgroundTask(withName: "encode") { [weak self] in
@@ -118,7 +118,7 @@ final class EncodeSession {
 
     func willEnterForeground() {
         endBackgroundTask()
-        transcoder.setThrottled(false)   // full speed again in the foreground
+        backend?.setThrottled(false)   // full speed again in the foreground
         if autoPaused {
             autoPaused = false
             resume()
@@ -127,7 +127,7 @@ final class EncodeSession {
 
     private func autoPauseForExpiration() {
         autoPaused = true
-        transcoder.pause()
+        backend?.pause()
         phase = .paused
         endBackgroundTask()
     }

@@ -77,18 +77,12 @@ struct SetupView: View {
             }
             switch settings.videoAction {
             case .encode:
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("CRF (quality)")
-                        Spacer()
-                        Text("\(Int(settings.crf))").monospacedDigit().foregroundStyle(.secondary)
-                    }
-                    Slider(value: $settings.crf, in: 0...51, step: 1)
-                    Text("HEVC (libx265, tag hvc1). Lower CRF = better quality, larger file. 28–32 is typical.")
-                        .font(.caption).foregroundStyle(.secondary)
+                Picker("Encoder", selection: $settings.videoEncoder) {
+                    ForEach(VideoEncoderKind.allCases) { Text($0.rawValue).tag($0) }
                 }
-                Picker("Preset", selection: $settings.preset) {
-                    ForEach(X265Preset.allCases) { Text($0.rawValue).tag($0) }
+                switch settings.videoEncoder {
+                case .x265:      x265Controls
+                case .videoToolbox: videoToolboxControls
                 }
                 Picker("Bit depth", selection: $settings.forceEightBit) {
                     Text("Match source").tag(false)
@@ -101,6 +95,112 @@ struct SetupView: View {
             case .remove:
                 Text("Dropped — output is audio-only (.m4a).").font(.caption).foregroundStyle(.secondary)
             }
+        }
+    }
+
+    /// CRF + preset — software x265 only. VideoToolbox has no CRF mode, which is
+    /// why these controls are scoped to this branch.
+    @ViewBuilder private var x265Controls: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("CRF (quality)")
+                Spacer()
+                Text("\(Int(settings.crf))").monospacedDigit().foregroundStyle(.secondary)
+            }
+            Slider(value: $settings.crf, in: 0...51, step: 1)
+            Text("HEVC (libx265, tag hvc1). Lower CRF = better quality, larger file. 28–32 is typical.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        Picker("Preset", selection: $settings.preset) {
+            ForEach(X265Preset.allCases) { Text($0.rawValue).tag($0) }
+        }
+    }
+
+    /// VideoToolbox quality knobs. Several of these are undocumented or
+    /// unsupported on iOS hardware — the result screen reports which ones the
+    /// encoder actually accepted, so the duds can be identified and removed.
+    @ViewBuilder private var videoToolboxControls: some View {
+        Picker("Rate control", selection: $settings.vtRateControl) {
+            ForEach(VTRateControl.allCases) { Text($0.rawValue).tag($0) }
+        }
+        Text(rateControlHelp).font(.caption).foregroundStyle(.secondary)
+
+        // Quality slider — only the two Quality-based modes use it.
+        if settings.vtRateControl == .constantQuality || settings.vtRateControl == .qualityWithCap {
+            VStack(alignment: .leading) {
+                HStack {
+                    Text("Quality")
+                    Spacer()
+                    Text(String(format: "%.2f", settings.vtQuality))
+                        .monospacedDigit().foregroundStyle(.secondary)
+                }
+                Slider(value: $settings.vtQuality, in: 0...1, step: 0.05)
+            }
+        }
+
+        // Bitrate — every mode except pure constant quality.
+        if settings.vtRateControl != .constantQuality {
+            VStack(alignment: .leading) {
+                HStack {
+                    Text(settings.vtRateControl == .qualityWithCap ? "Hard cap" : "Bitrate")
+                    Spacer()
+                    Text(String(format: "%.1f Mbps", settings.vtBitrateMbps))
+                        .monospacedDigit().foregroundStyle(.secondary)
+                }
+                Slider(value: $settings.vtBitrateMbps, in: 0.5...80, step: 0.5)
+            }
+        }
+
+        if settings.vtRateControl == .qualityWithCap {
+            VStack(alignment: .leading) {
+                HStack {
+                    Text("Cap headroom")
+                    Spacer()
+                    Text(String(format: "%.1f×", settings.vtCapMultiplier))
+                        .monospacedDigit().foregroundStyle(.secondary)
+                }
+                Slider(value: $settings.vtCapMultiplier, in: 1...4, step: 0.1)
+            }
+        }
+
+        if settings.vtRateControl == .bitrateWithQPCap {
+            Stepper("Max QP: \(settings.vtMaxQP)", value: $settings.vtMaxQP, in: 1...51)
+            Stepper(settings.vtMinQP == 0 ? "Min QP: off" : "Min QP: \(settings.vtMinQP)",
+                    value: $settings.vtMinQP, in: 0...51)
+            Text("Max QP is the quality floor (lower = better). Apple warns the encoder may drop frames to satisfy both the bitrate and the QP goal — check the output frame count.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Keyframe interval")
+                Spacer()
+                Text(settings.vtKeyframeSeconds == 0
+                     ? "auto"
+                     : String(format: "%.0f s", settings.vtKeyframeSeconds))
+                    .monospacedDigit().foregroundStyle(.secondary)
+            }
+            Slider(value: $settings.vtKeyframeSeconds, in: 0...10, step: 1)
+        }
+
+        Toggle("B-frames (frame reordering)", isOn: $settings.vtAllowFrameReordering)
+            .disabled(settings.vtRateControl == .constantBitrate)
+        Toggle("Prioritize speed over quality", isOn: $settings.vtPrioritizeSpeed)
+        Toggle("Maximize power efficiency", isOn: $settings.vtPowerEfficient)
+    }
+
+    private var rateControlHelp: String {
+        switch settings.vtRateControl {
+        case .constantQuality:
+            return "kVTCompressionPropertyKey_Quality. The closest thing to CRF, but Apple documents it as a JPEG-style knob and never promises HEVC support on iOS — this mode is here to find out whether the hardware honors it."
+        case .averageBitrate:
+            return "kVTCompressionPropertyKey_AverageBitRate. The only mode Apple documents as broadly supported — the safe baseline."
+        case .constantBitrate:
+            return "kVTCompressionPropertyKey_ConstantBitRate (iOS 16+). Pads frames to hold the rate, so it wastes space on low-motion scenes. Poor fit for compression; included for completeness."
+        case .bitrateWithQPCap:
+            return "Average bitrate plus MaxAllowedFrameQP — a bitrate target with a quality floor. The most CRF-like combination Apple actually documents on iOS."
+        case .qualityWithCap:
+            return "Constant quality plus DataRateLimits, so a busy scene can't run away. Depends on Quality being honored."
         }
     }
 

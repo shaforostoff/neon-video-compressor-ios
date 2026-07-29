@@ -50,7 +50,7 @@ final class PreviewController {
     private var playbackStarted = false  // synced playback issued once both ready
 
     // MARK: engine
-    private let transcoder = TVCTranscoder()
+    private var backend: TranscodeBackend?
     private var previewURL: URL?
     private var audioSessionActive = false
 
@@ -71,35 +71,31 @@ final class PreviewController {
         try? FileManager.default.removeItem(at: out)
         previewURL = out
 
-        let o = TVCEncodeOptions()
-        o.inputPath = job.inputURL.path
-        o.outputPath = out.path
-        o.videoMode = job.settings.videoAction.tvc
-        o.audioMode = job.settings.audioAction.tvc
-        o.crf = Int(job.settings.crf)
-        // Fastest x265 preset — the preview trades a little quality/size fidelity
-        // (preset affects both) for speed. CRF/mode/audio still match the real job.
-        o.preset = X265Preset.ultrafast.rawValue
-        o.audioProfile = job.settings.audioProfile.tvc
-        o.audioBitrate = job.settings.audioBitrateKbps * 1000
-        o.forceEightBit = job.settings.forceEightBit
-        o.durationLimitSeconds = Self.previewSeconds
+        // favorSpeed trades a little quality/size fidelity for a preview that
+        // appears quickly (x265 `ultrafast`, or VideoToolbox speed-priority). The
+        // quality target, stream modes and audio settings still match the real job.
+        let backend = makeTranscodeBackend(for: job.settings)
+        self.backend = backend
 
-        transcoder.onProgress = { [weak self] processed, total, _, _, _, _ in
-            guard let self, total > 0 else { return }
-            self.encodeFraction = min(1, processed / total)
+        backend.onProgress = { [weak self] p in
+            guard let self, p.totalSeconds > 0 else { return }
+            self.encodeFraction = min(1, p.processedSeconds / p.totalSeconds)
         }
-        transcoder.onFinished = { [weak self] success, error in
+        backend.onFinished = { [weak self] success, error, _ in
             guard let self else { return }
             if success { self.buildPlayers(originalURL: job.inputURL, encodedURL: out) }
             else { self.phase = .failed(error ?? "Preview encode failed.") }
         }
-        transcoder.start(with: o)
+        backend.start(BackendOptions(inputURL: job.inputURL,
+                                     outputURL: out,
+                                     settings: job.settings,
+                                     durationLimitSeconds: Self.previewSeconds,
+                                     favorSpeed: true))
     }
 
     /// Cancel/clean up everything. Safe to call multiple times.
     func teardown() {
-        transcoder.cancel()
+        backend?.cancel()
         encodedPlayer.pause()
         originalPlayer.pause()
         statusObservations.forEach { $0.invalidate() }

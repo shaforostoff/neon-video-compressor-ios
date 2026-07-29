@@ -159,6 +159,7 @@ struct ProgressView2: View {
                 }
             }
             if let saveError { Text(saveError).font(.caption).foregroundStyle(.red) }
+            encoderNotesView
             Button("Convert another") { dismiss() }.padding(.top, 8)
         }
     }
@@ -168,7 +169,33 @@ struct ProgressView2: View {
             Image(systemName: "xmark.octagon.fill").font(.system(size: 48)).foregroundStyle(.red)
             Text("Conversion failed").font(.title3).bold()
             Text(msg).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            encoderNotesView
             Button("Back") { dismiss() }
+        }
+    }
+
+    /// Which VideoToolbox properties the hardware encoder accepted. Empty (and so
+    /// hidden) for the x265 backend. This is the record of what actually works on
+    /// this device — a ✗ means the knob was rejected outright, and a ✓ only means
+    /// it was accepted, not that it changed the output.
+    @ViewBuilder private var encoderNotesView: some View {
+        if !session.encoderNotes.isEmpty {
+            DisclosureGroup("Hardware encoder report") {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(session.encoderNotes.enumerated()), id: \.offset) { _, line in
+                        Text(line)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(line.hasPrefix("✗") ? .red : .secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    ShareLink(item: session.encoderNotes.joined(separator: "\n")) {
+                        Label("Copy report", systemImage: "square.and.arrow.up")
+                            .font(.caption)
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .font(.subheadline)
         }
     }
 
