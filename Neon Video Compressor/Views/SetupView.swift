@@ -12,6 +12,9 @@ struct SetupView: View {
     @State private var settings = EncodeSettings.loadSaved()
     @State private var inputURL: URL?
     @State private var info: TVCMediaInfo?
+    /// Data rate of the source's video track, in Mbps. Caps the bitrate slider —
+    /// nil when it can't be determined, which falls back to an absolute ceiling.
+    @State private var sourceBitrateMbps: Double?
     @State private var baseName: String = "video"
 
     @State private var photoItem: PhotosPickerItem?
@@ -61,6 +64,10 @@ struct SetupView: View {
                 LabeledContent("Duration", value: timeString(info.durationSeconds))
                 if info.videoWidth > 0 {
                     LabeledContent("Video", value: "\(info.videoWidth)×\(info.videoHeight)")
+                }
+                if let sourceBitrateMbps {
+                    LabeledContent("Bitrate",
+                        value: String(format: "%.1f Mbps", sourceBitrateMbps))
                 }
                 if !info.audioCodec.isEmpty {
                     LabeledContent("Audio",
@@ -147,7 +154,12 @@ struct SetupView: View {
                     Text(String(format: "%.1f Mbps", settings.vtBitrateMbps))
                         .monospacedDigit().foregroundStyle(.secondary)
                 }
-                Slider(value: $settings.vtBitrateMbps, in: 0.5...80, step: 0.5)
+                Slider(value: $settings.vtBitrateMbps,
+                       in: bitrateRange, step: bitrateStep)
+                if let sourceBitrateMbps {
+                    Text(String(format: "Limited to the source's %.1f Mbps — a higher target can't add back detail the original never had.", sourceBitrateMbps))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
         }
 
@@ -187,6 +199,28 @@ struct SetupView: View {
             .disabled(settings.vtRateControl == .constantBitrate)
         Toggle("Prioritize speed over quality", isOn: $settings.vtPrioritizeSpeed)
         Toggle("Maximize power efficiency", isOn: $settings.vtPowerEfficient)
+    }
+
+    /// Upper bound for the bitrate slider: the source's own video data rate.
+    /// Asking the encoder for more bits than the original carries only inflates
+    /// the file. Falls back to a fixed ceiling when the source rate is unknown.
+    ///
+    /// Rounds *down* to the slider's granularity so the end stop is always at or
+    /// below the real source rate, and so a clamped value lands exactly on it.
+    /// Both the slider range and the clamp in `adopt` go through here, so they
+    /// can't drift apart.
+    static func bitrateCeiling(for sourceMbps: Double?) -> Double {
+        let raw = (sourceMbps ?? 0) > 0 ? sourceMbps! : 80
+        // Never degenerate, or Slider traps on an empty range.
+        return max(0.2, (raw * 10).rounded(.down) / 10)
+    }
+
+    private var bitrateRange: ClosedRange<Double> {
+        0.1...Self.bitrateCeiling(for: sourceBitrateMbps)
+    }
+
+    private var bitrateStep: Double {
+        Self.bitrateCeiling(for: sourceBitrateMbps) > 20 ? 0.5 : 0.1
     }
 
     private var rateControlHelp: String {
@@ -270,7 +304,7 @@ struct SetupView: View {
            let original = await originalFileURL(forAssetID: id) {
             let probed = await Task.detached { TVCTranscoder.probe(original.path) }.value
             if probed.ok {
-                adopt(url: original, info: probed)
+                await adopt(url: original, info: probed)
                 return
             }
             // ffmpeg couldn't read it after all — fall through to the export copy.
@@ -285,7 +319,7 @@ struct SetupView: View {
             }
             // Probe off the main thread so reading the file header doesn't hitch the UI.
             let probed = await Task.detached { TVCTranscoder.probe(movie.url.path) }.value
-            adopt(url: movie.url, info: probed)
+            await adopt(url: movie.url, info: probed)
         } catch {
             loadError = error.localizedDescription
         }
@@ -352,17 +386,39 @@ struct SetupView: View {
             }.value
             let probed = await Task.detached { TVCTranscoder.probe(dst.path) }.value
             sourceAssetID = nil   // Files import has no Photos asset to replace
-            adopt(url: dst, info: probed)
+            await adopt(url: dst, info: probed)
         } catch {
             loadError = error.localizedDescription
         }
     }
 
-    private func adopt(url: URL, info probed: TVCMediaInfo) {
+    private func adopt(url: URL, info probed: TVCMediaInfo) async {
         inputURL = url
         baseName = url.deletingPathExtension().lastPathComponent
         info = probed
         if !probed.ok { loadError = probed.error ?? "Unsupported file." }
+
+        // Clamp against the local rate rather than reading @State back, so the new
+        // ceiling is definitely the one being applied.
+        let rate = await Self.videoBitrateMbps(of: url)
+        sourceBitrateMbps = rate
+        // A target carried over from a bigger source would now sit past the end of
+        // the slider, so bring it back into range.
+        let ceiling = Self.bitrateCeiling(for: rate)
+        if settings.vtBitrateMbps > ceiling {
+            settings.vtBitrateMbps = ceiling
+        }
+    }
+
+    /// Data rate of the video track in Mbps, or nil if AVFoundation can't
+    /// estimate it (which leaves the slider on its fixed ceiling).
+    private static func videoBitrateMbps(of url: URL) async -> Double? {
+        let asset = AVURLAsset(url: url)
+        guard let track = try? await asset.loadTracks(withMediaType: .video).first,
+              let rate = try? await track.load(.estimatedDataRate),
+              rate.isFinite, rate > 0
+        else { return nil }
+        return Double(rate) / 1_000_000
     }
 
     /// Output filename — audio-only (video removed) is an .m4a, otherwise an .mp4.
